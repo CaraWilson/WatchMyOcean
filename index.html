@@ -1,21 +1,57 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Watch CalCOFI</title>
+    <title>Watch CalCOFI region </title>
     <style>
-        body { font-family: sans-serif; text-align: center; background-color: #f0f8ff; }
-        .container { margin: 50px auto; max-width: 900px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        img { width: 100%; height: auto; border: 1px solid #ddd; border-radius: 5px; }
-    </style>
+    body { font-family: sans-serif; background-color: #f0f4f8; padding: 20px; }
+    h1 { text-align: center; color: #2c3e50; }
+    
+    /* This creates the grid */
+    .data-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    /* Styles for each individual card */
+    .card {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+
+    .card img {
+        width: 100%; /* Makes image fit the card */
+        height: auto;
+        border: 1px solid #eee;
+        margin-bottom: 10px;
+    }
+
+    .card h3 { margin: 10px 0 5px; font-size: 1.1em; color: #34495e; }
+</style>
+  
 </head>
 <body>
-    <div class="container">
-        <h1>Daily Chlorophyll-a Data</h1>
-        <p>This image is live-embedded from the NOAA ERDDAP server.</p>
-        
-        <img src="https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.png?chlor_a%5B(last)%5D%5B(0.0)%5D%5B(39.018750000000004):(29.006249999999998)%5D%5B(-126.99375000000002):(-116.00625000000001)%5D&.draw=img&.vars=longitude%7Clatitude%7Cchlor_a&.colorBar=Rainbow2%7C%7C%7C.03%7C5%7C&.bgColor=0xffccccff" alt="Chlorophyll Plot">
-        
-        <p>Data Source: NOAA CoastWatch</p>
+<h1>Ocean Product Monitoring</h1>
+
+<div class="data-grid">
+
+    <div class="card">
+        <h3>Daily Chlorophyll-a </h3>
+        <img src="https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.png?chlor_a%5B(last)%5D%5B(0.0)%5D%5B(39):(30)%5D%5B(-127):(-116)%5D&.draw=img&.vars=longitude%7Clatitude%7Cchlor_a&.colorBar=Rainbow2%7C%7C%7C.03%7C5%7C&.bgColor=0xffccccff" alt="Chlorophyll">
+        <p><a href="https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.graph">View Full Dataset</a></p>
+    </div>
+
+    <div class="card">
+        <h3>Weekly Chlorophyll-a</h3>
+        <img src=https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaWeekly.png?chlor_a%5B(last)%5D%5B(0.0)%5D%5B(39):(30)%5D%5B(-127):(-116)%5D&.draw=img&.vars=longitude%7Clatitude%7Cchlor_a&.colorBar=Rainbow2%7C%7C%7C.03%7C5%7C&.bgColor=0xffccccff" alt="Chlorophyll">
+        <p><a href="https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaWeekly.graph">View Full Dataset</a></p>
+    </div>
+
     </div>
 </body>
 </html>
