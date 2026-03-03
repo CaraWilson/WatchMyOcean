@@ -97,6 +97,61 @@
     </div>
     
     </div>
+
+    <div id="erddap-widget" style="background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd; max-width: 500px;">
+  <h4 style="margin-top: 0;">Map Extent Control</h4>
+  
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+    <div>
+      <label style="font-size: 0.8em;">Min Lat</label>
+      <input type="number" id="latMin" value="30" step="0.5" style="width: 100%;">
+    </div>
+    <div>
+      <label style="font-size: 0.8em;">Max Lat</label>
+      <input type="number" id="latMax" value="50" step="0.5" style="width: 100%;">
+    </div>
+    <div>
+      <label style="font-size: 0.8em;">Min Lon</label>
+      <input type="number" id="lonMin" value="-130" step="0.5" style="width: 100%;">
+    </div>
+    <div>
+      <label style="font-size: 0.8em;">Max Lon</label>
+      <input type="number" id="lonMax" value="-110" step="0.5" style="width: 100%;">
+    </div>
+  </div>
+
+  <button onclick="updateErddapImage()" style="width: 100%; background: #004080; color: white; border: none; padding: 10px; cursor: pointer; border-radius: 4px;">
+    Update Satellite Image
+  </button>
+</div>
+
+<div style="margin-top: 20px;">
+  <img id="satellite-map" src="" alt="Select coordinates to load map" style="width: 100%; border: 1px solid #ccc;">
+  <p id="url-display" style="font-size: 0.7em; color: #666; word-break: break-all; margin-top: 5px;"></p>
+</div>
+
+<script>
+function updateErddapImage() {
+  // 1. Get values from the widget
+  const sLat = document.getElementById('latMin').value;
+  const nLat = document.getElementById('latMax').value;
+  const wLon = document.getElementById('lonMin').value;
+  const eLon = document.getElementById('lonMax').value;
+
+  // 2. Define your base ERDDAP URL (Change this to your specific dataset/server)
+  // Example using NOAA CoastWatch ERDDAP
+  const baseURL = "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdMH1chla8day.largePng";
+  
+  // 3. Construct the query string
+  // Note: ERDDAP expects [(time)][(lat)][(lon)] format
+  const queryString = `?chlorophyll[(last)][(${sLat}):(${nLat})][(${wLon}):(${eLon})]&.draw=surface&.vars=longitude|latitude|chlorophyll&.colorBar=|||||`;
+
+  const fullURL = baseURL + queryString;
+
+  // 4. Update the image and display the link
+  document.getElementById('satellite-map').src = fullURL;
+  document.getElementById('url-display').innerText = "Source URL: " + fullURL;
+}
 </body>
 </html>
 
