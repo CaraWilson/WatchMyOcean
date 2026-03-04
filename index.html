@@ -25,10 +25,9 @@
         .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
         
-        .map-container { position: relative; width: 100%; display: inline-block; overflow: hidden; }
+        .map-container { position: relative; width: 100%; display: inline-block; }
         .card img { width: 100%; height: auto; border: 1px solid #eee; background-color: #fafafa; display: block; }
         
-        /* The overlay now covers the WHOLE image, we will handle the math in JS */
         .station-overlay {
             position: absolute;
             top: 0; left: 0;
@@ -108,22 +107,21 @@ function drawStations() {
     const wLon = parseFloat(document.getElementById('lonMin').value);
     const eLon = parseFloat(document.getElementById('lonMax').value);
 
-    // ERDDAP UI Constants (Margins in percent of total image)
-    const topMargin = 5;    // Top of map area
-    const bottomMargin = 82; // Bottom of map area (start of legend)
-    const leftMargin = 7;   // Left of map area (end of lat labels)
-    const rightMargin = 96; // Right of map area
+    // ERDDAP PNG CALIBRATION (Adjust these percentages)
+    const topMargin = 10;    // Header area
+    const bottomMargin = 75; // Top of colorbar/legend
+    const leftMargin = 9;   // Latitude label area
+    const rightMargin = 97; // Narrow right border
 
     const svgs = [document.getElementById('ovl-daily'), document.getElementById('ovl-weekly')];
     
     svgs.forEach(svg => {
         svg.innerHTML = ''; 
         stations.forEach(st => {
-            // Percent within the map box
             const rawX = (st.lon - wLon) / (eLon - wLon);
             const rawY = (st.lat - sLat) / (nLat - sLat);
             
-            // Scaled to fit within the actual PNG map area
+            // Scaled positioning
             const x = leftMargin + (rawX * (rightMargin - leftMargin));
             const y = bottomMargin - (rawY * (bottomMargin - topMargin));
             
