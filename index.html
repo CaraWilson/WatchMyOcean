@@ -25,20 +25,14 @@
         .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
         
-        .map-container { position: relative; width: 100%; display: inline-block; }
+        .map-container { position: relative; width: 100%; display: inline-block; overflow: hidden; }
         .card img { width: 100%; height: auto; border: 1px solid #eee; background-color: #fafafa; display: block; }
         
-        /* CALIBRATED OVERLAY: 
-           - 'left: 4.5%' shifts dots West (to account for Y-axis labels)
-           - 'width: 93%' compensates for the shift
-           - 'height: calc(100% - 110px)' shifts dots North (to account for X-axis labels/legend)
-        */
+        /* The overlay now covers the WHOLE image, we will handle the math in JS */
         .station-overlay {
             position: absolute;
-            top: 25px; 
-            left: 4.5%; 
-            width: 93%; 
-            height: calc(100% - 110px); 
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             pointer-events: none;
         }
 
@@ -114,19 +108,30 @@ function drawStations() {
     const wLon = parseFloat(document.getElementById('lonMin').value);
     const eLon = parseFloat(document.getElementById('lonMax').value);
 
+    // ERDDAP UI Constants (Margins in percent of total image)
+    const topMargin = 5;    // Top of map area
+    const bottomMargin = 82; // Bottom of map area (start of legend)
+    const leftMargin = 7;   // Left of map area (end of lat labels)
+    const rightMargin = 96; // Right of map area
+
     const svgs = [document.getElementById('ovl-daily'), document.getElementById('ovl-weekly')];
     
     svgs.forEach(svg => {
         svg.innerHTML = ''; 
         stations.forEach(st => {
-            const x = ((st.lon - wLon) / (eLon - wLon)) * 100;
-            const y = 100 - (((st.lat - sLat) / (nLat - sLat)) * 100);
+            // Percent within the map box
+            const rawX = (st.lon - wLon) / (eLon - wLon);
+            const rawY = (st.lat - sLat) / (nLat - sLat);
             
-            if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
+            // Scaled to fit within the actual PNG map area
+            const x = leftMargin + (rawX * (rightMargin - leftMargin));
+            const y = bottomMargin - (rawY * (bottomMargin - topMargin));
+            
+            if (rawX >= 0 && rawX <= 1 && rawY >= 0 && rawY <= 1) {
                 const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                 circle.setAttribute("cx", x); circle.setAttribute("cy", y);
-                circle.setAttribute("r", "1.3"); circle.setAttribute("fill", "#ff3300"); // Red for visibility
-                circle.setAttribute("stroke", "white"); circle.setAttribute("stroke-width", "0.4");
+                circle.setAttribute("r", "1.1"); circle.setAttribute("fill", "#ff3300");
+                circle.setAttribute("stroke", "white"); circle.setAttribute("stroke-width", "0.3");
                 svg.appendChild(circle);
             }
         });
