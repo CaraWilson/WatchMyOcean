@@ -1,80 +1,41 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>CalCOFI Watch - WMS Overlay</title>
-    <style>
-        body { font-family: sans-serif; background-color: #f0f4f8; padding: 20px; margin: 0; }
-        h1 { text-align: center; color: #2c3e50; }
-        #erddap-widget { background: white; padding: 15px; border-radius: 8px; border: 1px solid #2c3e50; max-width: 1200px; margin: 0 auto 20px auto; }
-        .widget-flex { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
-        .input-group { flex: 1; }
-        .input-group label { display: block; font-size: 0.75em; font-weight: bold; margin-bottom: 5px; }
-        .input-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .update-btn { background: #2c3e50; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; font-weight: bold; }
-        
-        .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
-        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
-        .card img { width: 100%; height: auto; border: 1px solid #eee; background-color: #fafafa; display: block; min-height: 300px;}
-    </style>
-</head>
-<body>
+from erddapy import ERDDAP
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+import pandas as pd
 
-<h1>CalCOFI Satellite Monitoring</h1>
+# 1. Setup ERDDAP connection
+e = ERDDAP(server="https://coastwatch.pfeg.noaa.gov/erddap", protocol="tabledap")
 
-<div id="erddap-widget">
-    <div class="widget-flex">
-        <div class="input-group"><label>South Lat</label><input type="number" id="latMin" value="29" step="0.1"></div>
-        <div class="input-group"><label>North Lat</label><input type="number" id="latMax" value="39" step="0.1"></div>
-        <div class="input-group"><label>West Lon</label><input type="number" id="lonMin" value="-127" step="0.1"></div>
-        <div class="input-group"><label>East Lon</label><input type="number" id="lonMax" value="-116" step="0.1"></div>
-        <button class="update-btn" onclick="updateAllMaps()">Update All Maps</button>
-    </div>
-</div>
-
-<div class="data-grid">
-    <div class="card"><h3>Daily Chlorophyll</h3><img id="img-chla"></div>
-    <div class="card"><h3>SST</h3><img id="img-sst"></div>
-    <div class="card"><h3>Wind</h3><img id="img-wind"></div>
-    <div class="card"><h3>C-HARMS (PN)</h3><img id="img-charms"></div>
-</div>
-
-<script>
-function updateAllMaps() {
-    const sLat = document.getElementById('latMin').value;
-    const nLat = document.getElementById('latMax').value;
-    const wLon = document.getElementById('lonMin').value;
-    const eLon = document.getElementById('lonMax').value;
-
-    // We build a single URL that tells ERDDAP to Layer the Table on the Grid
-    // This bypasses CORS because the browser just sees one image.
-    const stationOverlay = `&.tDatasetID=erdCalCOFIstns&.tXVar=longitude&.tYVar=latitude` + 
-                           `&.tFilter=(cruise=%22202304%22,line>84,station<=70)` +
-                           `&.markerType=circle&.markerSize=10&.markerColor=0xFFFF00&.markerOutlineColor=0x000000` +
-                           `&.draw=mixed`;
-
-    function setMap(id, datasetID, gridVar, dims, colors, isCharms=false) {
-        let lMin = sLat, lMax = nLat, wMin = wLon, wMax = eLon;
-        if (isCharms) {
-            lMin = Math.max(31.3, sLat); lMax = Math.min(43, nLat);
-            wMin = Math.max(-127.5, wLon); wMax = Math.min(-117, eLon);
-        }
-
-        const gridUrl = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/${datasetID}.png` + 
-                        `?${gridVar}[(last)]${dims}[(${lMin}):(${lMax})][(${wMin}):(${wMax})]` +
-                        `&.vars=longitude|latitude|${gridVar}&.colorBar=${colors}`;
-        
-        const finalUrl = gridUrl + stationOverlay + `&.latMin=${lMin}&.latMax=${lMax}&.lonMin=${wMin}&.lonMax=${wMax}`;
-        document.getElementById('img-' + id).src = finalUrl;
-    }
-
-    setMap('chla', 'nesdisVHNnoaa20chlaDaily', 'chlor_a', '[(0.0)]', 'Rainbow2|||.03|5|');
-    setMap('sst', 'NOAA_DHW', 'CRW_SST', '', '|||12|24|');
-    setMap('wind', 'erdQCwindproducts1day', 'wind_speed', '[(10.0)]', '');
-    setMap('charms', 'wvcharmV3_3day_LonPM180', 'pseudo_nitzschia', '', '', true);
+# 2. Fetch Station Data
+e.dataset_id = "erdCalCOFIstns"
+e.constraints = {
+    "cruise=": "202304",
+    "line>": 84,
+    "station<=": 70,
 }
+e.variables = ["longitude", "latitude", "station", "line"]
+df_stns = e.to_pandas().dropna()
 
-window.onload = updateAllMaps;
-</script>
-</body>
-</html>
+# 3. Fetch Satellite Data (Example: Daily Chl-a)
+# We'll use a simple URL request for the grid to keep it lightweight
+grid_url = "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.nc?chlor_a[(last)][(0.0)][(29):(39)][(-127):(-116)]"
+# (In a full script, you'd use xarray to open this .nc file)
+
+# 4. Plotting
+fig = plt.figure(figsize=(10, 8))
+ax = plt.axes(projection=ccrs.PlateCarree())
+ax.set_extent([-127, -116, 29, 39])
+
+# Add map features
+ax.add_feature(cfeature.COASTLINE)
+ax.add_feature(cfeature.LAND, facecolor='lightgray')
+
+# Plot Stations
+plt.scatter(df_stns['longitude (degrees_east)'], 
+            df_stns['latitude (degrees_north)'], 
+            color='yellow', edgecolors='black', s=50, transform=ccrs.PlateCarree(), label='CalCOFI Stations')
+
+plt.title("CalCOFI Cruise 202304 - Station Map")
+plt.legend()
+plt.show()
