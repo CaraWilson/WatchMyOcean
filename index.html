@@ -108,9 +108,9 @@ function drawStations() {
     const eLon = parseFloat(document.getElementById('lonMax').value);
 
     // --- RE-CALIBRATED SETTINGS ---
-    const topMargin = 5.5;     
-    const bottomMargin = 81; // Lowered to pull dots South
-    const leftMargin = 7.5;  // Decreased to shift dots West
+    const topMargin = 5.0;     
+    const bottomMargin = 92; // Aggressively lifted to pull stations North
+    const leftMargin = 8.5;  
     const rightMargin = 96.5; 
 
     const svgs = [document.getElementById('ovl-daily'), document.getElementById('ovl-weekly')];
@@ -127,10 +127,10 @@ function drawStations() {
             if (rawX >= 0 && rawX <= 1 && rawY >= 0 && rawY <= 1) {
                 const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                 circle.setAttribute("cx", x); circle.setAttribute("cy", y);
-                circle.setAttribute("r", "1.2"); 
+                circle.setAttribute("r", "1.1"); 
                 circle.setAttribute("fill", "#ffff00"); 
                 circle.setAttribute("stroke", "#000000"); 
-                circle.setAttribute("stroke-width", "0.4");
+                circle.setAttribute("stroke-width", "0.3");
                 svg.appendChild(circle);
             }
         });
