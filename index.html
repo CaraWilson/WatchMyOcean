@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CalCOFI Watch - Fixed Overlay</title>
+    <title>CalCOFI - Clean Surface Overlay</title>
     <style>
         body { font-family: sans-serif; background-color: #f0f4f8; padding: 20px; margin: 0; }
         h1 { text-align: center; color: #2c3e50; }
@@ -17,23 +17,30 @@
         .input-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         .update-btn { background: #2c3e50; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; font-weight: bold; }
 
-        .data-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(500px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; }
+        .data-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(550px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; }
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
         
-        /* THE STACK: Aligns two legend-free images */
+        /* The Legend-Free Stack */
         .map-stack { 
             position: relative; 
             width: 100%; 
             aspect-ratio: 1 / 1; 
-            background: #ddd; 
+            background: #fff; 
             border: 1px solid #333;
+            overflow: hidden;
         }
         .layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .satellite { z-index: 1; }
-        .stations { z-index: 2; pointer-events: none; opacity: 0.8; } /* Slight opacity helps see the water underneath */
+        
+        /* Stations use 'multiply' to let colors show through the white background of the station map */
+        .stations { 
+            z-index: 2; 
+            pointer-events: none; 
+            mix-blend-mode: multiply; 
+        }
 
-        .legend-container { margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; }
-        .legend-container img { max-width: 100%; height: auto; }
+        .external-legend { margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; }
+        .external-legend img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
@@ -45,18 +52,18 @@
     <div class="input-group"><label>N Lat</label><input type="number" id="latMax" value="39" step="0.1"></div>
     <div class="input-group"><label>W Lon</label><input type="number" id="lonMin" value="-127" step="0.1"></div>
     <div class="input-group"><label>E Lon</label><input type="number" id="lonMax" value="-116" step="0.1"></div>
-    <button class="update-btn" onclick="updateDashboard()">Update Maps</button>
+    <button class="update-btn" onclick="updateDashboard()">Update Map</button>
 </div>
 
 <div class="data-grid">
     <div class="card">
-        <h3>Chlorophyll + Station Overlay</h3>
+        <h3>Chlorophyll with Aligned Stations</h3>
         <div class="map-stack">
             <img id="img-chla-base" class="layer satellite">
             <img id="img-chla-stns" class="layer stations">
         </div>
-        <div class="legend-container">
-            <p style="font-size: 0.8em; margin: 0 0 5px 0;">Chlorophyll-a (mg/m³)</p>
+        <div class="external-legend">
+            <p style="font-size:0.8em; color:#666; margin-bottom:5px;">Chlorophyll-a Color Scale</p>
             <img id="leg-chla">
         </div>
     </div>
@@ -69,18 +76,21 @@ function updateDashboard() {
     const wLon = document.getElementById('lonMin').value;
     const eLon = document.getElementById('lonMax').value;
 
-    const coords = `[(${sLat}):(${nLat})][(${wLon}):(${eLon})]`;
-    const alignment = `&.latMin=${sLat}&.latMax=${nLat}&.lonMin=${wLon}&.lonMax=${eLon}`;
+    // IMPORTANT: .draw=surface MUST be early in the URL to force legend removal
+    const commonBounds = `&.draw=surface&.latMin=${sLat}&.latMax=${nLat}&.lonMin=${wLon}&.lonMax=${eLon}`;
+    const dataBounds = `[(${sLat}):(${nLat})][(${wLon}):(${eLon})]`;
 
-    // 1. Legend-Free Satellite Surface
-    document.getElementById('img-chla-base').src = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.png?chlor_a[(last)][(0.0)]${coords}&.draw=surface&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||.03|5|`;
+    // 1. Satellite Base (Clean Surface)
+    const chlaBase = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.png?chlor_a[(last)][(0.0)]${dataBounds}&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||.03|5|`;
+    document.getElementById('img-chla-base').src = chlaBase + commonBounds;
 
-    // 2. Legend-Free Station Surface
-    // By matching the alignment parameters and using .draw=surface, the images are identical in scale.
-    document.getElementById('img-chla-stns').src = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/erdCalCOFIstns.png?longitude,latitude&cruise=%22202304%22&line>84&station<=70&.draw=surface&.markerType=circle&.markerSize=6&.markerColor=0x000000` + alignment;
+    // 2. Station Overlay (Clean Surface)
+    // Using Black circles (0x000000) for high contrast
+    const stnBase = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/erdCalCOFIstns.png?longitude,latitude&cruise=%22202304%22&line>84&station<=70&.markerType=circle&.markerSize=6&.markerColor=0x000000`;
+    document.getElementById('img-chla-stns').src = stnBase + commonBounds;
 
-    // 3. Isolated Legend (Drawn into the bottom div)
-    document.getElementById('leg-chla').src = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.png?chlor_a[(last)][(0.0)]${coords}&.draw=legend&.colorBar=Rainbow2|||.03|5|`;
+    // 3. Isolated Legend
+    document.getElementById('leg-chla').src = chlaBase + `&.draw=legend`;
 }
 
 window.onload = updateDashboard;
