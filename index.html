@@ -2,91 +2,108 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CalCOFI Precision Overlay</title>
+    <title>CalCOFI - Transparent Station Overlay</title>
     <style>
         body { font-family: sans-serif; background-color: #f0f4f8; padding: 20px; margin: 0; }
-        h1 { text-align: center; color: #2c3e50; }
-        #erddap-widget { 
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 5px; }
+        p.subtitle { text-align: center; color: #7f8c8d; margin-bottom: 25px; font-size: 0.9em; }
+        
+        #controls { 
             background: #ffffff; padding: 15px; border-radius: 8px; border: 1px solid #2c3e50; 
-            max-width: 1200px; margin: 0 auto 30px auto; 
+            max-width: 1000px; margin: 0 auto 30px auto; 
+            display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;
         }
-        .widget-flex { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
         .input-group { flex: 1; }
-        .input-group label { display: block; font-size: 0.75em; font-weight: bold; margin-bottom: 5px; }
-        .input-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .input-group label { display: block; font-size: 0.75em; font-weight: bold; margin-bottom: 5px; color: #34495e; }
+        .input-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
         .update-btn { background: #2c3e50; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; font-weight: bold; }
 
-        .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
-        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
+        .data-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(500px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; }
+        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
         
-        /* The Magic Stack */
-        .map-stack { position: relative; width: 100%; aspect-ratio: 1 / 1; background: #eee; overflow: hidden; border: 1px solid #ccc; }
-        .layer-base { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        .layer-stations { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
-        
-        .card h3 { margin: 10px 0; color: #34495e; }
-        .card p { font-size: 0.8em; color: #7f8c8d; }
+        /* The Stacking Logic */
+        .map-stack { 
+            position: relative; 
+            width: 100%; 
+            aspect-ratio: 1 / 1; 
+            background: #001529; /* Dark background for high-contrast Chl */
+            border: 1px solid #333;
+        }
+        .base-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .station-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+
+        .card h3 { margin-bottom: 15px; color: #2c3e50; }
+        .legend-box { margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; }
+        .legend-box img { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
 
-<h1>CalCOFI Chlorophyll Overlays</h1>
+<h1>CalCOFI Satellite Monitoring</h1>
+<p class="subtitle">Stations (Cruise 202304) overlaid on Chlorophyll Surface</p>
 
-<div id="erddap-widget">
-    <div class="widget-flex">
-        <div class="input-group"><label>South Lat</label><input type="number" id="latMin" value="29" step="0.1"></div>
-        <div class="input-group"><label>North Lat</label><input type="number" id="latMax" value="39" step="0.1"></div>
-        <div class="input-group"><label>West Lon</label><input type="number" id="lonMin" value="-127" step="0.1"></div>
-        <div class="input-group"><label>East Lon</label><input type="number" id="lonMax" value="-116" step="0.1"></div>
-        <button class="update-btn" onclick="updateMaps()">Update Overlay</button>
-    </div>
+<div id="controls">
+    <div class="input-group"><label>South Lat</label><input type="number" id="latMin" value="29" step="0.1"></div>
+    <div class="input-group"><label>North Lat</label><input type="number" id="latMax" value="39" step="0.1"></div>
+    <div class="input-group"><label>West Lon</label><input type="number" id="lonMin" value="-127" step="0.1"></div>
+    <div class="input-group"><label>East Lon</label><input type="number" id="lonMax" value="-116" step="0.1"></div>
+    <button class="update-btn" onclick="updateDashboard()">Update View</button>
 </div>
 
 <div class="data-grid">
     <div class="card">
         <h3>Daily Chlorophyll + Stations</h3>
         <div class="map-stack">
-            <img id="img-chla-base" class="layer-base">
-            <img id="img-chla-stns" class="layer-stations">
+            <img id="img-chla-base" class="base-layer">
+            <img id="img-chla-stns" class="station-layer">
         </div>
-        <p>Layered via .draw=surface</p>
+        <div class="legend-box">
+            <img id="leg-chla" alt="Chlorophyll Legend">
+        </div>
     </div>
 
     <div class="card">
         <h3>Weekly Chlorophyll + Stations</h3>
         <div class="map-stack">
-            <img id="img-weekly-base" class="layer-base">
-            <img id="img-weekly-stns" class="layer-stations">
+            <img id="img-week-base" class="base-layer">
+            <img id="img-week-stns" class="station-layer">
         </div>
-        <p>Layered via .draw=surface</p>
+        <div class="legend-box">
+            <img id="leg-week" alt="Chlorophyll Legend">
+        </div>
     </div>
 </div>
 
 <script>
-function updateMaps() {
+function updateDashboard() {
     const sLat = document.getElementById('latMin').value;
     const nLat = document.getElementById('latMax').value;
     const wLon = document.getElementById('lonMin').value;
     const eLon = document.getElementById('lonMax').value;
 
-    const bounds = `[(${sLat}):(${nLat})][(${wLon}):(${eLon})]`;
-    
-    // 1. Generate the Satellite Base (Surface only = No Legend)
-    const dailyBase = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.png?chlor_a[(last)][(0.0)]${bounds}&.draw=surface&.colorBar=Rainbow2|||.03|5|`;
-    const weeklyBase = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaWeekly.png?chlor_a[(last)][(0.0)]${bounds}&.draw=surface&.colorBar=Rainbow2|||.03|5|`;
+    const coords = `[(${sLat}):(${nLat})][(${wLon}):(${eLon})]`;
+    const commonBounds = `&.latMin=${sLat}&.latMax=${nLat}&.lonMin=${wLon}&.lonMax=${eLon}`;
 
-    // 2. Generate the Transparent Station Map (Surface only = No Legend)
-    // We use markerType=square and markerSize=5 for visibility
-    const stnOverlay = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/erdCalCOFIstns.png?longitude,latitude&cruise=%22202304%22&line>84&station<=70&.draw=surface&.markerType=square&.markerSize=5&.markerColor=0x000000&.latMin=${sLat}&.latMax=${nLat}&.lonMin=${wLon}&.lonMax=${eLon}`;
+    // 1. BASE LAYER: Satellite Chlorophyll (Surface only - includes land/coast)
+    const dailyUrl = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.png?chlor_a[(last)][(0.0)]${coords}&.draw=surface&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||.03|5|`;
+    const weeklyUrl = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaWeekly.png?chlor_a[(last)][(0.0)]${coords}&.draw=surface&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||.03|5|`;
 
-    document.getElementById('img-chla-base').src = dailyBase;
-    document.getElementById('img-chla-stns').src = stnOverlay;
-    
-    document.getElementById('img-weekly-base').src = weeklyBase;
-    document.getElementById('img-weekly-stns').src = stnOverlay;
+    // 2. STATION LAYER: Transparent Overlay (Surface only - NO land, NO coastline, NO bathymetry)
+    // .draw=surface + .land=none + .coastline=none makes it a true transparent mask
+    const stnUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/erdCalCOFIstns.png?longitude,latitude&cruise=%22202304%22&line>84&station<=70&.draw=surface&.land=none&.coastline=none&.markerType=circle&.markerSize=6&.markerColor=0xFFFF00&.markerOutlineColor=0x000000${commonBounds}`;
+
+    // 3. SEPARATE LEGEND: Just the color bar so it doesn't mess up alignment
+    const legendUrl = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.png?chlor_a[(last)][(0.0)]${coords}&.draw=legend&.colorBar=Rainbow2|||.03|5|`;
+
+    document.getElementById('img-chla-base').src = dailyUrl;
+    document.getElementById('img-week-base').src = weeklyUrl;
+    document.getElementById('img-chla-stns').src = stnUrl;
+    document.getElementById('img-week-stns').src = stnUrl;
+    document.getElementById('leg-chla').src = legendUrl;
+    document.getElementById('leg-week').src = legendUrl;
 }
 
-window.onload = updateMaps;
+window.onload = updateDashboard;
 </script>
 </body>
 </html>
