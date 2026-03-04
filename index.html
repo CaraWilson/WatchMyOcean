@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CalCOFI - True Transparent Overlay</title>
+    <title>CalCOFI - CSS Blend Overlay</title>
     <style>
         body { font-family: sans-serif; background-color: #f0f4f8; padding: 20px; margin: 0; }
-        h1 { text-align: center; color: #2c3e50; margin-bottom: 5px; }
+        h1 { text-align: center; color: #2c3e50; }
         
         #controls { 
             background: #ffffff; padding: 15px; border-radius: 8px; border: 1px solid #2c3e50; 
@@ -13,23 +13,30 @@
             display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;
         }
         .input-group { flex: 1; }
-        .input-group label { display: block; font-size: 0.75em; font-weight: bold; margin-bottom: 5px; color: #34495e; }
-        .input-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .input-group label { display: block; font-size: 0.75em; font-weight: bold; margin-bottom: 5px; }
+        .input-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         .update-btn { background: #2c3e50; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; font-weight: bold; }
 
         .data-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(500px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; }
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
         
-        /* The Stack */
+        /* THE FIX: Blending the Station Layer */
         .map-stack { 
             position: relative; 
             width: 100%; 
             aspect-ratio: 1 / 1; 
-            background: #000; /* Contrast background */
+            background: #000; 
             border: 1px solid #333;
         }
         .base-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        .station-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+        
+        .station-layer { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; 
+            pointer-events: none;
+            /* This filter removes the grey land and keeps the bright yellow dots */
+            filter: contrast(200%) brightness(150%) chroma-key; 
+            mix-blend-mode: screen; 
+        }
 
         .legend-box { margin-top: 10px; }
         .legend-box img { max-width: 100%; height: auto; }
@@ -49,7 +56,7 @@
 
 <div class="data-grid">
     <div class="card">
-        <h3>Daily Chlorophyll + Stations</h3>
+        <h3>Chlorophyll + Station Overlay</h3>
         <div class="map-stack">
             <img id="img-chla-base" class="base-layer">
             <img id="img-chla-stns" class="station-layer">
@@ -68,15 +75,14 @@ function updateDashboard() {
     const coords = `[(${sLat}):(${nLat})][(${wLon}):(${eLon})]`;
     const alignment = `&.latMin=${sLat}&.latMax=${nLat}&.lonMin=${wLon}&.lonMax=${eLon}`;
 
-    // 1. Satellite Base
+    // 1. Satellite Base (Standard Surface)
     document.getElementById('img-chla-base').src = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.png?chlor_a[(last)][(0.0)]${coords}&.draw=surface&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||.03|5|`;
 
-    // 2. Station Overlay: KEY FIX
-    // We set bgcolor=0x808080 and transparent=true. 
-    // This tells ERDDAP's renderer to key out the base map (land/bathymetry) entirely.
+    // 2. Station Overlay (Standard Surface)
+    // We use a specific Marker Color (Magenta 0xFF00FF) because it is very bright 
+    // and contrasts perfectly for the "screen" blend mode to pick it up.
     const stnUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/erdCalCOFIstns.png?longitude,latitude&cruise=%22202304%22&line>84&station<=70` +
-                   `&.draw=surface&bgcolor=0x808080&transparent=true` +
-                   `&.markerType=circle&.markerSize=6&.markerColor=0xFFFF00&.markerOutlineColor=0x000000` + 
+                   `&.draw=surface&.markerType=circle&.markerSize=8&.markerColor=0xFF00FF` + 
                    alignment;
 
     document.getElementById('img-chla-stns').src = stnUrl;
