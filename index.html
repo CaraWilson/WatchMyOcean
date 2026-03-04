@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CalCOFI Watch - Final CSV Logic</title>
+    <title>CalCOFI Watch - WMS Overlay</title>
     <style>
         body { font-family: sans-serif; background-color: #f0f4f8; padding: 20px; margin: 0; }
-        h1 { text-align: center; color: #2c3e50; margin-bottom: 5px; }
+        h1 { text-align: center; color: #2c3e50; }
         #erddap-widget { background: white; padding: 15px; border-radius: 8px; border: 1px solid #2c3e50; max-width: 1200px; margin: 0 auto 20px auto; }
         .widget-flex { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
         .input-group { flex: 1; }
@@ -15,13 +15,7 @@
         
         .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
-        .map-container { position: relative; width: 100%; display: inline-block; overflow: hidden; }
-        .card img { width: 100%; height: auto; border: 1px solid #eee; background-color: #fafafa; display: block; }
-        
-        /* CALIBRATED OVERLAY */
-        .station-overlay { position: absolute; top: 5.5%; left: 7.4%; width: 89.2%; height: 77.2%; pointer-events: none; }
-        
-        #console { max-width: 1200px; margin: 20px auto; padding: 10px; background: #333; color: #0f0; font-family: monospace; font-size: 12px; border-radius: 4px; height: 60px; overflow-y: scroll; }
+        .card img { width: 100%; height: auto; border: 1px solid #eee; background-color: #fafafa; display: block; min-height: 300px;}
     </style>
 </head>
 <body>
@@ -38,77 +32,46 @@
     </div>
 </div>
 
-<div class="data-grid" id="main-grid">
-    <div class="card"><h3>Daily Chlorophyll</h3><div class="map-container"><img id="img-chla"><svg id="ovl-chla" class="station-overlay" viewBox="0 0 100 100" preserveAspectRatio="none"></svg></div></div>
-    <div class="card"><h3>SST</h3><div class="map-container"><img id="img-sst"><svg id="ovl-sst" class="station-overlay" viewBox="0 0 100 100" preserveAspectRatio="none"></svg></div></div>
-    <div class="card"><h3>Wind Speed</h3><div class="map-container"><img id="img-wind"><svg id="ovl-wind" class="station-overlay" viewBox="0 0 100 100" preserveAspectRatio="none"></svg></div></div>
-    <div class="card"><h3>C-HARMS (PN)</h3><div class="map-container"><img id="img-charms"><svg id="ovl-charms" class="station-overlay" viewBox="0 0 100 100" preserveAspectRatio="none"></svg></div></div>
+<div class="data-grid">
+    <div class="card"><h3>Daily Chlorophyll</h3><img id="img-chla"></div>
+    <div class="card"><h3>SST</h3><img id="img-sst"></div>
+    <div class="card"><h3>Wind</h3><img id="img-wind"></div>
+    <div class="card"><h3>C-HARMS (PN)</h3><img id="img-charms"></div>
 </div>
 
-<div id="console">> System ready. Press Update to fetch data...</div>
-
 <script>
-function log(msg) { document.getElementById('console').innerHTML += "<br>> " + msg; }
+function updateAllMaps() {
+    const sLat = document.getElementById('latMin').value;
+    const nLat = document.getElementById('latMax').value;
+    const wLon = document.getElementById('lonMin').value;
+    const eLon = document.getElementById('lonMax').value;
 
-async function updateAllMaps() {
-    const sLat = parseFloat(document.getElementById('latMin').value);
-    const nLat = parseFloat(document.getElementById('latMax').value);
-    const wLon = parseFloat(document.getElementById('lonMin').value);
-    const eLon = parseFloat(document.getElementById('lonMax').value);
+    // We build a single URL that tells ERDDAP to Layer the Table on the Grid
+    // This bypasses CORS because the browser just sees one image.
+    const stationOverlay = `&.tDatasetID=erdCalCOFIstns&.tXVar=longitude&.tYVar=latitude` + 
+                           `&.tFilter=(cruise=%22202304%22,line>84,station<=70)` +
+                           `&.markerType=circle&.markerSize=10&.markerColor=0xFFFF00&.markerOutlineColor=0x000000` +
+                           `&.draw=mixed`;
 
-    log("Updating images...");
-    const coords = `[(${sLat}):(${nLat})][(${wLon}):(${eLon})]`;
-    document.getElementById('img-chla').src = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.png?chlor_a[(last)][(0.0)]${coords}&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||.03|5|`;
-    document.getElementById('img-sst').src = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW.png?CRW_SST[(last)]${coords}&.vars=longitude|latitude|CRW_SST`;
-    document.getElementById('img-wind').src = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdQCwindproducts1day.png?wind_speed[(last)][(10.0)]${coords}`;
+    function setMap(id, datasetID, gridVar, dims, colors, isCharms=false) {
+        let lMin = sLat, lMax = nLat, wMin = wLon, wMax = eLon;
+        if (isCharms) {
+            lMin = Math.max(31.3, sLat); lMax = Math.min(43, nLat);
+            wMin = Math.max(-127.5, wLon); wMax = Math.min(-117, eLon);
+        }
 
-    const cSLat = Math.max(31.3, sLat), cNLat = Math.min(43, nLat);
-    const cWLon = Math.max(-127.5, wLon), cELon = Math.min(-117, eLon);
-    document.getElementById('img-charms').src = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180.png?pseudo_nitzschia[(last)][(${cSLat}):(${cNLat})][(${cWLon}):(${cELon})]`;
-
-    log("Fetching CSV station data...");
-    const csvUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/erdCalCOFIstns.csv?longitude,latitude&cruise=%22202304%22&line>84&station<=70`;
-
-    try {
-        const response = await fetch(csvUrl);
-        const text = await response.text();
-        const lines = text.split('\n').slice(2); // Skip headers
-        let stations = [];
+        const gridUrl = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/${datasetID}.png` + 
+                        `?${gridVar}[(last)]${dims}[(${lMin}):(${lMax})][(${wMin}):(${wMax})]` +
+                        `&.vars=longitude|latitude|${gridVar}&.colorBar=${colors}`;
         
-        lines.forEach(line => {
-            const parts = line.split(',');
-            if (parts.length >= 2) {
-                stations.push({ lon: parseFloat(parts[0]), lat: parseFloat(parts[1]) });
-            }
-        });
-
-        log("Found " + stations.length + " stations. Drawing...");
-        
-        const overlays = ['chla', 'sst', 'wind', 'charms'];
-        overlays.forEach(id => {
-            const svg = document.getElementById('ovl-' + id);
-            svg.innerHTML = '';
-            
-            let curSLat = sLat, curNLat = nLat, curWLon = wLon, curELon = eLon;
-            if (id === 'charms') { curSLat = cSLat; curNLat = cNLat; curWLon = cWLon; curELon = cELon; }
-
-            stations.forEach(st => {
-                const x = ((st.lon - curWLon) / (curELon - curWLon)) * 100;
-                const y = 100 - (((st.lat - curSLat) / (curNLat - curSLat)) * 100);
-                
-                if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
-                    const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                    c.setAttribute("cx", x); c.setAttribute("cy", y);
-                    c.setAttribute("r", "1.5"); c.setAttribute("fill", "#ffff00");
-                    c.setAttribute("stroke", "black"); c.setAttribute("stroke-width", "0.5");
-                    svg.appendChild(c);
-                }
-            });
-        });
-        log("Done.");
-    } catch (err) {
-        log("ERROR: Station fetch failed. Check CORS or network.");
+        const finalUrl = gridUrl + stationOverlay + `&.latMin=${lMin}&.latMax=${lMax}&.lonMin=${wMin}&.lonMax=${wMax}`;
+        document.getElementById('img-' + id).src = finalUrl;
     }
+
+    setMap('chla', 'nesdisVHNnoaa20chlaDaily', 'chlor_a', '[(0.0)]', 'Rainbow2|||.03|5|');
+    setMap('sst', 'NOAA_DHW', 'CRW_SST', '', '|||12|24|');
+    setMap('wind', 'erdQCwindproducts1day', 'wind_speed', '[(10.0)]', '');
+    setMap('charms', 'wvcharmV3_3day_LonPM180', 'pseudo_nitzschia', '', '', true);
 }
 
 window.onload = updateAllMaps;
