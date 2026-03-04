@@ -43,7 +43,7 @@
 <body>
 
 <h1>Satellite Monitoring of CalCOFI region</h1>
-<p class="subtitle">Dynamic satellite imagery with custom cruise station overlays. Stations are now marked in Yellow.</p>
+<p class="subtitle">Dynamic satellite imagery with custom cruise station overlays.</p>
 
 <div id="erddap-widget">
     <div class="widget-flex">
@@ -107,11 +107,11 @@ function drawStations() {
     const wLon = parseFloat(document.getElementById('lonMin').value);
     const eLon = parseFloat(document.getElementById('lonMax').value);
 
-    // --- UPDATED CALIBRATION ---
-    const topMargin = 5;     
-    const bottomMargin = 64; // Significant Northward shift
-    const leftMargin = 11;   // Westward shift
-    const rightMargin = 96; 
+    // --- RE-CALIBRATED SETTINGS ---
+    const topMargin = 5.5;     
+    const bottomMargin = 81; // Lowered to pull dots South
+    const leftMargin = 7.5;  // Decreased to shift dots West
+    const rightMargin = 96.5; 
 
     const svgs = [document.getElementById('ovl-daily'), document.getElementById('ovl-weekly')];
     
@@ -128,8 +128,8 @@ function drawStations() {
                 const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                 circle.setAttribute("cx", x); circle.setAttribute("cy", y);
                 circle.setAttribute("r", "1.2"); 
-                circle.setAttribute("fill", "#ffff00"); // BRIGHT YELLOW
-                circle.setAttribute("stroke", "#000000"); // BLACK OUTLINE
+                circle.setAttribute("fill", "#ffff00"); 
+                circle.setAttribute("stroke", "#000000"); 
                 circle.setAttribute("stroke-width", "0.4");
                 svg.appendChild(circle);
             }
