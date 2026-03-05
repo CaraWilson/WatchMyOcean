@@ -47,13 +47,13 @@
 <div class="data-grid" id="grid">
     <div class="card"><h3>Daily Chlorophyll</h3><img id="img-chla-d"><a id="lnk-chla-d" target="_blank">View on ERDDAP</a></div>
     <div class="card"><h3>Weekly Chlorophyll</h3><img id="img-chla-w"><a id="lnk-chla-w" target="_blank">View on ERDDAP</a></div>
-    <div class="card"><h3>SST (10-22°C)</h3><img id="img-sst"><a id="lnk-sst" target="_blank">View on ERDDAP</a></div>
+    <div class="card"><h3>SST</h3><img id="img-sst"><a id="lnk-sst" target="_blank">View on ERDDAP</a></div>
     <div class="card"><h3>SST Anomaly</h3><img id="img-sst-anom"><a id="lnk-sst-anom" target="_blank">View on ERDDAP</a></div>
     <div class="card"><h3>Sardine Habitat</h3><img id="img-sardine"><a id="lnk-sardine" target="_blank">View on ERDDAP</a></div>
     <div class="card"><h3>C-HARMS (PN)</h3><img id="img-charms-pn"><a id="lnk-charms-pn" target="_blank">View on ERDDAP</a></div>
     <div class="card"><h3>C-HARMS (Salinity)</h3><img id="img-charms-salt"><a id="lnk-charms-salt" target="_blank">View on ERDDAP</a></div>
     <div class="card"><h3>Wind Speed</h3><img id="img-wind"><a id="lnk-wind" target="_blank">View on ERDDAP</a></div>
-    <div class="card"><h3>SSH (±0.5m)</h3><img id="img-ssh"><a id="lnk-ssh" target="_blank">View on ERDDAP</a></div>
+    <div class="card"><h3>SSH</h3><img id="img-ssh"><a id="lnk-ssh" target="_blank">View on ERDDAP</a></div>
     <div class="card"><h3>Salinity (SMOS)</h3><img id="img-sss"><a id="lnk-sss" target="_blank">View on ERDDAP</a></div>
 </div>
 
@@ -91,7 +91,7 @@ function updateAllMaps() {
     setContent('charms-pn', 'https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180', `?pseudo_nitzschia[(last)]${charmsCoords}`);
     setContent('charms-salt', 'https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180', `?salinity[(last)]${charmsCoords}&.colorBar=|||31|35|`);
     setContent('ssh', 'https://coastwatch.noaa.gov/erddap/griddap/noaacweddymesiplusdaily', `?ssh[(last)]${coords}&.vars=longitude|latitude|ssh&.colorBar=|||-0.5|0.5|`);
-    setContent('sss', 'https://coastwatch.pfeg.noaa.gov/erddap/griddap/coastwatchSMOSv662SSS3day', `?sss[(last)][(0.0)]${coords}`);
+    setContent('sss', 'https://coastwatch.pfeg.noaa.gov/erddap/griddap/coastwatchSMOSv662SSS3day', `?sss[(last)][(0.0)]${coords}&.colorBar=|||31|35|`);
 }
 
 window.onload = updateAllMaps;
