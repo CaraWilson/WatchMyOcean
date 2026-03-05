@@ -2,39 +2,42 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CalCOFI - KML Geo-Aligned Overlay</title>
+    <title>CalCOFI Watch - WMS Precision</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         body { font-family: sans-serif; background-color: #f0f4f8; padding: 20px; margin: 0; }
-        h1 { text-align: center; color: #2c3e50; }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
         #controls { background: white; padding: 15px; border-radius: 8px; border: 1px solid #2c3e50; max-width: 1000px; margin: 0 auto 20px auto; display: flex; gap: 10px; align-items: flex-end; }
         .input-group { flex: 1; }
         .input-group label { display: block; font-size: 0.7em; font-weight: bold; margin-bottom: 5px; }
         .input-group input { width: 100%; padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
         .update-btn { background: #2c3e50; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 4px; font-weight: bold; }
-        .map-card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 900px; margin: 0 auto; }
-        #map { height: 600px; width: 100%; background: #001529; }
+        .map-card { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 1100px; margin: 0 auto; position: relative; }
+        #map { height: 650px; width: 100%; background: #001529; border-radius: 4px; }
+        .legend-overlay { position: absolute; bottom: 30px; left: 30px; z-index: 1000; background: rgba(255,255,255,0.8); padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
 
-<h1>CalCOFI KML Precision Overlay</h1>
+<h1>CalCOFI Precision WMS Overlay</h1>
 
 <div id="controls">
-    <div class="input-group"><label>S Lat</label><input type="number" id="latMin" value="29"></div>
-    <div class="input-group"><label>N Lat</label><input type="number" id="latMax" value="39"></div>
-    <div class="input-group"><label>W Lon</label><input type="number" id="lonMin" value="-127"></div>
-    <div class="input-group"><label>E Lon</label><input type="number" id="lonMax" value="-116"></div>
-    <button class="update-btn" onclick="updateMap()">Update Precision View</button>
+    <div class="input-group"><label>S Lat</label><input type="number" id="latMin" value="29" step="0.1"></div>
+    <div class="input-group"><label>N Lat</label><input type="number" id="latMax" value="39" step="0.1"></div>
+    <div class="input-group"><label>W Lon</label><input type="number" id="lonMin" value="-127" step="0.1"></div>
+    <div class="input-group"><label>E Lon</label><input type="number" id="lonMax" value="-116" step="0.1"></div>
+    <button class="update-btn" onclick="updateView()">Update View</button>
 </div>
 
 <div class="map-card">
     <div id="map"></div>
+    <div class="legend-overlay">
+        <img id="legend-img" src="" alt="Legend">
+    </div>
 </div>
 
 <script>
-// Cruise 202304 Stations
 const stations = [
     {lat: 34.448, lon: -120.518}, {lat: 34.315, lon: -120.789}, {lat: 34.148, lon: -121.127}, 
     {lat: 33.982, lon: -121.464}, {lat: 33.815, lon: -121.802}, {lat: 33.648, lon: -122.138},
@@ -46,37 +49,52 @@ const stations = [
     {lat: 32.068, lon: -119.105}, {lat: 31.735, lon: -119.778}
 ];
 
-const map = L.map('map', { crs: L.CRS.EPSG4326, attributionControl: false });
-let satelliteLayer, stationLayer;
+// Initialize Map with CRS.EPSG4326 (The KML/ERDDAP Standard)
+const map = L.map('map', { 
+    crs: L.CRS.EPSG4326, 
+    attributionControl: false 
+});
 
-function updateMap() {
+let satLayer, stnLayer;
+
+function updateView() {
     const sLat = parseFloat(document.getElementById('latMin').value);
     const nLat = parseFloat(document.getElementById('latMax').value);
     const wLon = parseFloat(document.getElementById('lonMin').value);
     const eLon = parseFloat(document.getElementById('lonMax').value);
     const bounds = [[sLat, wLon], [nLat, eLon]];
 
-    if (satelliteLayer) map.removeLayer(satelliteLayer);
-    if (stationLayer) map.removeLayer(stationLayer);
+    if (satLayer) map.removeLayer(satLayer);
+    if (stnLayer) map.removeLayer(stnLayer);
 
-    // KML Logic: We use the .png endpoint but with the 'surface' draw 
-    // to mimic what the KML GroundOverlay would reference.
-    const imgUrl = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.png?chlor_a[(last)][(0.0)][(${sLat}):(${nLat})][(${wLon}):(${eLon})]&.draw=surface&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||.03|5|`;
+    // WMS Layer - This aligns the satellite data to the global coordinate grid
+    satLayer = L.tileLayer.wms('https://coastwatch.pfeg.noaa.gov/erddap/wms/nesdisVHNnoaa20chlaDaily/request', {
+        layers: 'nesdisVHNnoaa20chlaDaily:chlor_a',
+        format: 'image/png',
+        transparent: true,
+        version: '1.3.0',
+        styles: 'boxfill/Rainbow2',
+        time: 'last',
+        crs: L.CRS.EPSG4326,
+        COLORSCALERANGE: '0.03,5'
+    }).addTo(map);
 
-    satelliteLayer = L.imageOverlay(imgUrl, bounds).addTo(map);
-
-    stationLayer = L.layerGroup();
+    // Static Stations - Plotted on the same global coordinate grid
+    stnLayer = L.layerGroup();
     stations.forEach(st => {
         L.circleMarker([st.lat, st.lon], {
-            radius: 4, fillColor: "yellow", color: "#000", weight: 1, fillOpacity: 1
-        }).addTo(stationLayer);
+            radius: 5, fillColor: "yellow", color: "black", weight: 1, fillOpacity: 1
+        }).addTo(stnLayer);
     });
-    stationLayer.addTo(map);
+    stnLayer.addTo(map);
+
+    // Set the Legend
+    document.getElementById('legend-img').src = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.png?chlor_a[(last)][(0.0)][(${sLat}):(${nLat})][(${wLon}):(${eLon})]&.draw=legend&.colorBar=Rainbow2|||.03|5|`;
 
     map.fitBounds(bounds);
 }
 
-window.onload = updateMap;
+window.onload = updateView;
 </script>
 </body>
 </html>
