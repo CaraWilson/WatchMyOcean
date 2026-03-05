@@ -22,11 +22,11 @@
         .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
         
-        /* The Overlay Container */
-        .map-wrapper { position: relative; width: 100%; margin-bottom: 10px; }
-        .card img { width: 100%; height: auto; border: 1px solid #eee; background-color: #fafafa; display: block; }
+        /* The Stacking Container */
+        .map-wrapper { position: relative; width: 100%; margin-bottom: 10px; background-color: #fafafa; }
+        .card img { width: 100%; height: auto; border: 1px solid #eee; display: block; }
         
-        /* The Transparent Station "Sticker" */
+        /* The Station Overlay */
         .stn-overlay { 
             position: absolute; 
             top: 0; left: 0; width: 100%; height: 100%; 
@@ -59,7 +59,7 @@
     <div class="card"><h3>SST (10-22°C)</h3><div class="map-wrapper"><img id="img-sst"><img id="stn-sst" class="stn-overlay"></div><a id="lnk-sst" target="_blank">View on ERDDAP</a></div>
     <div class="card"><h3>C-HARMS (PN)</h3><div class="map-wrapper"><img id="img-charms-pn"><img id="stn-charms-pn" class="stn-overlay"></div><a id="lnk-charms-pn" target="_blank">View on ERDDAP</a></div>
     <div class="card"><h3>SSH (±0.5m)</h3><div class="map-wrapper"><img id="img-ssh"><img id="stn-ssh" class="stn-overlay"></div><a id="lnk-ssh" target="_blank">View on ERDDAP</a></div>
-    </div>
+</div>
 
 <script>
 function resetDefaults() {
@@ -77,26 +77,32 @@ function updateAllMaps() {
     const eLon = document.getElementById('lonMax').value;
 
     const coords = `[(${sLat}):(${nLat})][(${wLon}):(${eLon})]`;
-    const alignment = `&.latMin=${sLat}&.latMax=${nLat}&.lonMin=${wLon}&.lonMax=${eLon}`;
+    
+    // THE FIX: Using .transparentPng and setting colors explicitly
+    // We request the same bounding box so titles and labels match exactly.
+    function getStationUrl(sL, nL, wL, eL) {
+        return `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/erdCalCOFIstns.transparentPng?longitude,latitude&cruise=%22202304%22&line>84&station<=70&.markerType=circle&.markerSize=5&.markerColor=0xFFFF00&.markerOutlineColor=0x000000&.latMin=${sL}&.latMax=${nL}&.lonMin=${wL}&.lonMax=${eL}`;
+    }
 
-    // The Station Overlay URL - Generates ONLY yellow dots on transparency
-    const stationUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/erdCalCOFIstns.png?longitude,latitude&cruise=%22202304%22&line>84&station<=70&.markerType=circle&.markerSize=5&.markerColor=0xFFFF00&.markerOutlineColor=0x000000` + alignment;
-
-    function setContent(id, baseUrl, gridPart, showStations = false) {
+    function setContent(id, baseUrl, gridPart, currentSL, currentNL, currentWL, currentEL) {
         document.getElementById('img-' + id).src = baseUrl + ".png" + gridPart;
         document.getElementById('lnk-' + id).href = baseUrl + ".graph" + gridPart;
         
         const stnImg = document.getElementById('stn-' + id);
         if (stnImg) {
-            // This ensures the station "picture" has the exact same labels/margins as the satellite picture
-            stnImg.src = stationUrl;
+            stnImg.src = getStationUrl(currentSL, currentNL, currentWL, currentEL);
         }
     }
 
-    setContent('chla-d', 'https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily', `?chlor_a[(last)][(0.0)]${coords}&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||.03|5|`);
-    setContent('sst', 'https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW', `?CRW_SST[(last)]${coords}&.vars=longitude|latitude|CRW_SST&.colorBar=|||10|22|`);
-    setContent('charms-pn', 'https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180', `?pseudo_nitzschia[(last)][(${Math.max(31.3, sLat)}):(${Math.min(43, nLat)})][(${Math.max(-127.5, wLon)}):(${Math.min(-117, eLon)})]`);
-    setContent('ssh', 'https://coastwatch.noaa.gov/erddap/griddap/noaacweddymesiplusdaily', `?ssh[(last)]${coords}&.vars=longitude|latitude|ssh&.colorBar=|||-0.5|0.5|`);
+    // Standard Products
+    setContent('chla-d', 'https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily', `?chlor_a[(last)][(0.0)]${coords}&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||.03|5|`, sLat, nLat, wLon, eLon);
+    setContent('sst', 'https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW', `?CRW_SST[(last)]${coords}&.vars=longitude|latitude|CRW_SST&.colorBar=|||10|22|`, sLat, nLat, wLon, eLon);
+    setContent('ssh', 'https://coastwatch.noaa.gov/erddap/griddap/noaacweddymesiplusdaily', `?ssh[(last)]${coords}&.vars=longitude|latitude|ssh&.colorBar=|||-0.5|0.5|`, sLat, nLat, wLon, eLon);
+
+    // C-HARMS (Handles its own clamping)
+    const cSLat = Math.max(31.3, sLat), cNLat = Math.min(43, nLat);
+    const cWLon = Math.max(-127.5, wLon), cELon = Math.min(-117, eLon);
+    setContent('charms-pn', 'https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180', `?pseudo_nitzschia[(last)][(${cSLat}):(${cNLat})][(${cWLon}):(${cELon})]`, cSLat, cNLat, cWLon, cELon);
 }
 
 window.onload = updateAllMaps;
