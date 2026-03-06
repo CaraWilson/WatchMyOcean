@@ -1,94 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>CalCOFI Satellite Dashboard</title>
-  <style>
-    body { font-family: sans-serif; background: #f0f4f8; margin: 0; padding: 20px; }
-    h1 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
-    #erddap-widget {
-      background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #2c3e50;
-      max-width: 1200px; margin: 0 auto 20px auto; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-    .widget-flex { display: flex; gap: 10px; align-items: flex-end; }
-    .input-group { flex: 1; }
-    .input-group label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #34495e; }
-    .input-group input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-    .button-group { display: flex; gap: 6px; }
-    .update-btn, .reset-btn { border: none; padding: 10px 14px; color: white; cursor: pointer; border-radius: 4px; font-weight: bold; }
-    .update-btn { background: #2c3e50; }
-    .reset-btn { background: #95a5a6; }
-    .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
-    .card { background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); text-align: center; }
-    .map-wrap { position: relative; width: 100%; }
-    .map-wrap img { width: 100%; height: auto; display: block; border: 1px solid #eee; background: #fafafa; min-height: 200px; }
-    .station-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-    .card a { color: #3498db; text-decoration: none; font-weight: bold; font-size: 0.9em; }
-  </style>
-</head>
-<body>
-
-<h1>CalCOFI Satellite Monitoring</h1>
-
-<div id="erddap-widget">
-  <div class="widget-flex">
-    <div class="input-group"><label>South Lat</label><input id="latMin" type="number" value="29" step="0.1" /></div>
-    <div class="input-group"><label>North Lat</label><input id="latMax" type="number" value="39" step="0.1" /></div>
-    <div class="input-group"><label>West Lon</label><input id="lonMin" type="number" value="-127" step="0.1" /></div>
-    <div class="input-group"><label>East Lon</label><input id="lonMax" type="number" value="-116" step="0.1" /></div>
-    <div class="button-group">
-      <button class="update-btn" onclick="updateAllMaps()">Update</button>
-      <button class="reset-btn" onclick="resetDefaults()">Reset</button>
-    </div>
-  </div>
-</div>
-
-<div class="data-grid" id="grid">
-  <div class="card"><h3>Daily Chlorophyll</h3><div class="map-wrap"><img id="img-chla-d"><canvas id="cvs-chla-d" class="station-canvas"></canvas></div><a id="lnk-chla-d" target="_blank">View on ERDDAP</a></div>
-  <div class="card"><h3>Weekly Chlorophyll</h3><div class="map-wrap"><img id="img-chla-w"><canvas id="cvs-chla-w" class="station-canvas"></canvas></div><a id="lnk-chla-w" target="_blank">View on ERDDAP</a></div>
-  <div class="card"><h3>SST (10-22°C)</h3><div class="map-wrap"><img id="img-sst"><canvas id="cvs-sst" class="station-canvas"></canvas></div><a id="lnk-sst" target="_blank">View on ERDDAP</a></div>
-  <div class="card"><h3>SST Anomaly</h3><div class="map-wrap"><img id="img-sst-anom"><canvas id="cvs-sst-anom" class="station-canvas"></canvas></div><a id="lnk-sst-anom" target="_blank">View on ERDDAP</a></div>
-  <div class="card"><h3>Sardine Habitat</h3><div class="map-wrap"><img id="img-sardine"><canvas id="cvs-sardine" class="station-canvas"></canvas></div><a id="lnk-sardine" target="_blank">View on ERDDAP</a></div>
-  <div class="card"><h3>C-HARMS (PN)</h3><div class="map-wrap"><img id="img-charms-pn"><canvas id="cvs-charms-pn" class="station-canvas"></canvas></div><a id="lnk-charms-pn" target="_blank">View on ERDDAP</a></div>
-  <div class="card"><h3>Salinity (WCOFS)</h3><div class="map-wrap"><img id="img-charms-salt"><canvas id="cvs-charms-salt" class="station-canvas"></canvas></div><a id="lnk-charms-salt" target="_blank">View on ERDDAP</a></div>
-  <div class="card"><h3>Wind Speed</h3><div class="map-wrap"><img id="img-wind"><canvas id="cvs-wind" class="station-canvas"></canvas></div><a id="lnk-wind" target="_blank">View on ERDDAP</a></div>
-  <div class="card"><h3>SSH (±0.5m)</h3><div class="map-wrap"><img id="img-ssh"><canvas id="cvs-ssh" class="station-canvas"></canvas></div><a id="lnk-ssh" target="_blank">View on ERDDAP</a></div>
-  <div class="card"><h3>Salinity (SMOS)</h3><div class="map-wrap"><img id="img-sss"><canvas id="cvs-sss" class="station-canvas"></canvas></div><a id="lnk-sss" target="_blank">View on ERDDAP</a></div>
-</div>
-
-<script>
-  const STATIONS = [
-    { lon: -117.295, lat: 32.958332 }, { lon: -117.29, lat: 32.93833 }, { lon: -117.486664, lat: 33.233334 },
-    { lon: -117.388336, lat: 32.916664 }, { lon: -117.525, lat: 32.843334 }, { lon: -117.87, lat: 32.68 },
-    { lon: -118.21333, lat: 32.515 }, { lon: -118.555, lat: 32.345 }, { lon: -118.88333, lat: 32.178333 },
-    { lon: -119.23167, lat: 32.00833 }, { lon: -119.57166, lat: 31.846666 }, { lon: -120.245, lat: 31.511665 },
-    { lon: -120.63167, lat: 32.081665 }, { lon: -119.956665, lat: 32.413334 }, { lon: -119.48, lat: 32.651665 },
-    { lon: -118.935, lat: 32.91833 }, { lon: -118.386665, lat: 33.183334 }, { lon: -118.25, lat: 33.251667 },
-    { lon: -117.75166, lat: 33.49 }, { lon: -117.77, lat: 33.483334 }, { lon: -117.905, lat: 33.41833 },
-    { lon: -118.096664, lat: 33.625 }, { lon: -118.456665, lat: 33.885 }, { lon: -118.49167, lat: 33.891666 },
-    { lon: -118.628334, lat: 33.82 }, { lon: -118.971664, lat: 33.658333 }, { lon: -119.31834, lat: 33.485 },
-    { lon: -119.66333, lat: 33.32 }, { lon: -120.00667, lat: 33.156666 }, { lon: -120.348335, lat: 32.99 },
-    { lon: -121.03167, lat: 32.656666 }
-  ];
-
-  function resetDefaults() {
-    document.getElementById("latMin").value = 29;
-    document.getElementById("latMax").value = 39;
-    document.getElementById("lonMin").value = -127;
-    document.getElementById("lonMax").value = -116;
-    updateAllMaps();
-  }
-
+// Plot-box tuning specifically for C-HARMS panels
   function getPlotBox(canvas, id) {
     const W = canvas.width, H = canvas.height;
-    // Calibrated Plot Box Margins
+    
+    // Default margins for standard products
     let L = 0.15, R = 0.05, T = 0.13, B = 0.38;
-    if (["chla-d", "chla-w", "sst", "sardine", "ssh"].includes(id)) { L = -0.02; }
-    if (id.includes("charms")) { L = -0.05; B = 0.44; }
-    if (id === "sss") { L = -0.10; }
+
+    // C-HARMS Specific Calibration: 
+    // These maps have wider left margins (L) to accommodate the Lat labels 
+    // and different vertical offsets (T/B)
+    if (id.includes("charms")) { 
+      L = 0.088;  // Shifted left to match C-HARMS Y-axis
+      R = 0.045;  // Right margin
+      T = 0.115;  // Top margin (Header)
+      B = 0.225;  // Bottom margin (Colorbar)
+    } else if (["chla-d", "chla-w", "sst", "sardine", "ssh", "wind", "sss"].includes(id)) { 
+      L = 0.075; 
+      B = 0.225; 
+    }
     
     return {
-      left: Math.round(W * L), top: Math.round(H * T),
+      left: Math.round(W * L), 
+      top: Math.round(H * T),
       width: Math.max(10, Math.round(W * (1 - L - R))),
       height: Math.max(10, Math.round(H * (1 - T - B)))
     };
@@ -102,58 +34,35 @@
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // CONDITION: Only draw if current view matches Default CalCOFI proportions
     const isDefault = (sLat === 29 && nLat === 39 && wLon === -127 && eLon === -116);
     if (!isDefault) return;
 
     const id = canvasId.replace("cvs-", "");
     const box = getPlotBox(canvas, id);
 
+    // CRITICAL: C-HARMS is clamped to 31.3N - 43N and -127.5W - -117W. 
+    // We must use these bounds for the math, not the user input 29-39.
+    let curSLat = sLat, curNLat = nLat, curWLon = wLon, curELon = eLon;
+    if (id.includes("charms")) {
+      curSLat = 31.3; 
+      curNLat = 39.01; // Matches the default view top-crop for C-HARMS
+      curWLon = -127.0; 
+      curELon = -117.0;
+    }
+
     ctx.save();
     ctx.beginPath(); ctx.rect(box.left, box.top, box.width, box.height); ctx.clip();
 
     STATIONS.forEach(p => {
+      // Mapping station Lat/Lon to the specific Grid Bounds of the C-HARMS panel
       const px = {
-        x: box.left + ((p.lon - wLon) / (eLon - wLon)) * box.width,
-        y: box.top + ((nLat - p.lat) / (nLat - sLat)) * box.height
+        x: box.left + ((p.lon - curWLon) / (curELon - curWLon)) * box.width,
+        y: box.top + ((curNLat - p.lat) / (curNLat - curSLat)) * box.height
       };
+      
       ctx.beginPath(); ctx.arc(px.x, px.y, 3.5, 0, Math.PI * 2);
       ctx.fillStyle = "yellow"; ctx.fill();
       ctx.lineWidth = 1; ctx.strokeStyle = "black"; ctx.stroke();
     });
     ctx.restore();
   }
-
-  function updateAllMaps() {
-    const sLat = Number(document.getElementById("latMin").value);
-    const nLat = Number(document.getElementById("latMax").value);
-    const wLon = Number(document.getElementById("lonMin").value);
-    const eLon = Number(document.getElementById("lonMax").value);
-    const coords = `[(${sLat}):(${nLat})][(${wLon}):(${eLon})]`;
-
-    const config = [
-      { id: "chla-d", url: "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily", q: `?chlor_a[(last)][(0.0)]${coords}&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||.03|5|` },
-      { id: "chla-w", url: "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaWeekly", q: `?chlor_a[(last)][(0.0)]${coords}&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||.03|5|` },
-      { id: "sst", url: "https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW", q: `?CRW_SST[(last)]${coords}&.vars=longitude|latitude|CRW_SST&.colorBar=|||10|22|` },
-      { id: "sst-anom", url: "https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW", q: `?CRW_SSTANOMALY[(last)]${coords}&.vars=longitude|latitude|CRW_SSTANOMALY&.colorBar=BlueWhiteRed|||-2|2|` },
-      { id: "sardine", url: "https://coastwatch.pfeg.noaa.gov/erddap/griddap/sardine_habitat_viirs_v2", q: `?potential_habitat_classification[(last)]${coords}` },
-      { id: "charms-pn", url: "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180", q: `?pseudo_nitzschia[(last)][(${Math.max(31.3, sLat)}):(${Math.min(43, nLat)})][(${Math.max(-127.5, wLon)}):(${Math.min(-117, eLon)})]` },
-      { id: "charms-salt", url: "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180", q: `?salinity[(last)][(${Math.max(31.3, sLat)}):(${Math.min(43, nLat)})][(${Math.max(-127.5, wLon)}):(${Math.min(-117, eLon)})]&.colorBar=|||31|35|` },
-      { id: "wind", url: "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdQCwindproducts1day", q: `?wind_speed[(last)][(10.0)]${coords}` },
-      { id: "ssh", url: "https://coastwatch.noaa.gov/erddap/griddap/noaacweddymesiplusdaily", q: `?ssh[(last)]${coords}&.vars=longitude|latitude|ssh&.colorBar=|||-0.5|0.5|` },
-      { id: "sss", url: "https://coastwatch.pfeg.noaa.gov/erddap/griddap/coastwatchSMOSv662SSS3day", q: `?sss[(last)][(0.0)]${coords}&.colorBar=|||31|35|` }
-    ];
-
-    config.forEach(item => {
-      const img = document.getElementById("img-" + item.id);
-      img.onload = () => drawStations("cvs-" + item.id, "img-" + item.id, sLat, nLat, wLon, eLon);
-      img.src = item.url + ".png" + item.q;
-      document.getElementById("lnk-" + item.id).href = item.url + ".graph" + item.q;
-    });
-  }
-
-  window.onload = updateAllMaps;
-  window.onresize = () => updateAllMaps();
-</script>
-</body>
-</html>
