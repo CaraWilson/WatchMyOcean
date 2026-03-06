@@ -6,6 +6,7 @@
   <style>
     body { font-family: sans-serif; background: #f0f4f8; margin: 0; padding: 20px; }
     h1 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
+    
     #erddap-widget {
       background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #2c3e50;
       max-width: 1200px; margin: 0 auto 20px auto; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
@@ -14,10 +15,23 @@
     .input-group { flex: 1; }
     .input-group label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #34495e; }
     .input-group input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-    .button-group { display: flex; gap: 6px; }
-    .update-btn, .reset-btn { border: none; padding: 10px 14px; color: white; cursor: pointer; border-radius: 4px; font-weight: bold; }
+    
+    .button-group { display: flex; flex-direction: column; gap: 5px; min-width: 180px; }
+    .btn-row { display: flex; gap: 6px; }
+    
+    .update-btn, .reset-btn { border: none; padding: 10px 14px; color: white; cursor: pointer; border-radius: 4px; font-weight: bold; flex: 1; }
     .update-btn { background: #2c3e50; }
     .reset-btn { background: #95a5a6; }
+    
+    /* The warning text style */
+    #station-note { 
+      font-size: 11px; 
+      color: #e67e22; 
+      font-weight: bold; 
+      visibility: hidden; /* Hidden by default */
+      margin-top: 2px;
+    }
+
     .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
     .card { background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); text-align: center; }
     .map-wrap { position: relative; width: 100%; }
@@ -37,9 +51,13 @@
     <div class="input-group"><label>North Lat</label><input id="latMax" type="number" value="39" step="0.1" /></div>
     <div class="input-group"><label>West Lon</label><input id="lonMin" type="number" value="-127" step="0.1" /></div>
     <div class="input-group"><label>East Lon</label><input id="lonMax" type="number" value="-116" step="0.1" /></div>
+    
     <div class="button-group">
-      <button class="update-btn" onclick="updateAllMaps()">Update</button>
-      <button class="reset-btn" onclick="resetDefaults()">Reset</button>
+      <div class="btn-row">
+        <button class="update-btn" onclick="updateAllMaps()">Update</button>
+        <button class="reset-btn" onclick="resetDefaults()">Reset</button>
+      </div>
+      <div id="station-note">⚠️ Stations hidden (Custom View)</div>
     </div>
   </div>
 </div>
@@ -82,13 +100,8 @@
 
   function getPlotBox(canvas, id) {
     const W = canvas.width, H = canvas.height;
-    // Calibrated Margins
     let L = 0.075, R = 0.05, T = 0.115, B = 0.225;
-
-    if (id.includes("charms")) { 
-      L = 0.088; // Specific shift for C-HARMS alignment
-    }
-    
+    if (id.includes("charms")) { L = 0.088; }
     return {
       left: Math.round(W * L), top: Math.round(H * T),
       width: Math.max(10, Math.round(W * (1 - L - R))),
@@ -99,29 +112,26 @@
   function drawStations(canvasId, imgId, sLat, nLat, wLon, eLon) {
     const canvas = document.getElementById(canvasId), img = document.getElementById(imgId);
     if (!canvas || !img || img.clientWidth === 0) return;
-    
     canvas.width = img.clientWidth; canvas.height = img.clientHeight;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Default view only check
-    if (sLat !== 29 || nLat !== 39 || wLon !== -127 || eLon !== -116) return;
+    const isDefault = (sLat === 29 && nLat === 39 && wLon === -127 && eLon === -116);
+    
+    // Toggle the warning text visibility
+    document.getElementById('station-note').style.visibility = isDefault ? 'hidden' : 'visible';
+
+    if (!isDefault) return;
 
     const id = canvasId.replace("cvs-", "");
     const box = getPlotBox(canvas, id);
-
-    // C-HARMS Clamp adjustment
     let drawSLat = sLat, drawNLat = nLat, drawWLon = wLon, drawELon = eLon;
     if (id.includes("charms")) {
-      drawSLat = 31.3;
-      drawNLat = 39.01;
-      drawWLon = -127.0;
-      drawELon = -117.0;
+      drawSLat = 31.3; drawNLat = 39.01; drawWLon = -127.0; drawELon = -117.0;
     }
 
     ctx.save();
     ctx.beginPath(); ctx.rect(box.left, box.top, box.width, box.height); ctx.clip();
-
     STATIONS.forEach(p => {
       const px = {
         x: box.left + ((p.lon - drawWLon) / (drawELon - drawWLon)) * box.width,
