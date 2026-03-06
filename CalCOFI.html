@@ -16,20 +16,21 @@
     .input-group label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #34495e; }
     .input-group input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
     
-    .button-group { display: flex; flex-direction: column; gap: 5px; min-width: 180px; }
+    .button-group { display: flex; flex-direction: column; gap: 5px; min-width: 200px; }
     .btn-row { display: flex; gap: 6px; }
     
     .update-btn, .reset-btn { border: none; padding: 10px 14px; color: white; cursor: pointer; border-radius: 4px; font-weight: bold; flex: 1; }
     .update-btn { background: #2c3e50; }
     .reset-btn { background: #95a5a6; }
     
-    /* The warning text style */
+    /* The warning text style inside the widget box */
     #station-note { 
-      font-size: 11px; 
-      color: #e67e22; 
+      font-size: 12px; 
+      color: #d35400; 
       font-weight: bold; 
-      visibility: hidden; /* Hidden by default */
-      margin-top: 2px;
+      display: none; /* Controlled by JS */
+      margin-top: 5px;
+      text-align: center;
     }
 
     .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
@@ -57,7 +58,7 @@
         <button class="update-btn" onclick="updateAllMaps()">Update</button>
         <button class="reset-btn" onclick="resetDefaults()">Reset</button>
       </div>
-      <div id="station-note">⚠️ Stations hidden (Custom View)</div>
+      <div id="station-note">⚠️ Stations hidden on redrawn maps</div>
     </div>
   </div>
 </div>
@@ -100,8 +101,12 @@
 
   function getPlotBox(canvas, id) {
     const W = canvas.width, H = canvas.height;
+    // Standard ERDDAP PNG Margins
     let L = 0.075, R = 0.05, T = 0.115, B = 0.225;
+    
+    // Fine-tune C-HARMS specifically to avoid the shift
     if (id.includes("charms")) { L = 0.088; }
+    
     return {
       left: Math.round(W * L), top: Math.round(H * T),
       width: Math.max(10, Math.round(W * (1 - L - R))),
@@ -117,25 +122,24 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const isDefault = (sLat === 29 && nLat === 39 && wLon === -127 && eLon === -116);
-    
-    // Toggle the warning text visibility
-    document.getElementById('station-note').style.visibility = isDefault ? 'hidden' : 'visible';
+    document.getElementById('station-note').style.display = isDefault ? 'none' : 'block';
 
     if (!isDefault) return;
 
     const id = canvasId.replace("cvs-", "");
     const box = getPlotBox(canvas, id);
-    let drawSLat = sLat, drawNLat = nLat, drawWLon = wLon, drawELon = eLon;
-    if (id.includes("charms")) {
-      drawSLat = 31.3; drawNLat = 39.01; drawWLon = -127.0; drawELon = -117.0;
-    }
+
+    // Coordinate Mapping Sync
+    let dSLat = sLat, dNLat = nLat, dWLon = wLon, dELon = eLon;
+    if (id.includes("charms")) { dSLat = 31.3; dNLat = 39.01; dWLon = -127.0; dELon = -117.0; }
 
     ctx.save();
     ctx.beginPath(); ctx.rect(box.left, box.top, box.width, box.height); ctx.clip();
+
     STATIONS.forEach(p => {
       const px = {
-        x: box.left + ((p.lon - drawWLon) / (drawELon - drawWLon)) * box.width,
-        y: box.top + ((drawNLat - p.lat) / (drawNLat - drawSLat)) * box.height
+        x: box.left + ((p.lon - dWLon) / (dELon - dWLon)) * box.width,
+        y: box.top + ((dNLat - p.lat) / (dNLat - dSLat)) * box.height
       };
       ctx.beginPath(); ctx.arc(px.x, px.y, 3.5, 0, Math.PI * 2);
       ctx.fillStyle = "yellow"; ctx.fill();
