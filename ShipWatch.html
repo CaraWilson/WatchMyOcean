@@ -50,42 +50,71 @@
     </div>
 </div>
 
-<script>
+    <script>
+    // This function handles the actual work
     async function updateDashboard() {
         const selector = document.getElementById('vessel-selector');
-        const shipId = selector.value;
         const log = document.getElementById('log-content');
         const trackImg = document.getElementById('track-map');
         const chlorImg = document.getElementById('chlor-map');
 
-        log.innerHTML = `Starting request for ${shipId}...<br>`;
+        // Get the current ID from the selector
+        const shipId = selector.value;
+
+        log.innerHTML = `<b>[${new Date().toLocaleTimeString()}]</b> Initializing request for ${shipId}...<br>`;
 
         try {
             // 1. Fetch Latest Position
             const posUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.json?latitude,longitude,time&orderByMax("time")`;
-            log.innerHTML += `Requesting Lat/Lon from: <a href="${posUrl}" target="_blank" style="color:#3498db">${posUrl}</a><br>`;
+            log.innerHTML += `Step 1: Contacting ERDDAP...<br>`;
 
             const response = await fetch(posUrl);
             
             if (!response.ok) {
-                throw new Error(`ERDDAP Server Error: ${response.status} (${response.statusText})`);
+                throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
             }
 
             const data = await response.json();
             
-            // Extract values
+            if (!data.table || !data.table.rows.length) {
+                throw new Error("ERDDAP returned no rows for this ship.");
+            }
+
             const lat = data.table.rows[0][0];
             const lon = data.table.rows[0][1];
             const timeStr = data.table.rows[0][2];
 
-            log.innerHTML += `<span style="color:#2ecc71">SUCCESS: Found Ship!</span><br>`;
-            log.innerHTML += `<b>LAT:</b> ${lat}<br><b>LON:</b> ${lon}<br><b>TIME:</b> ${timeStr}<br>`;
+            log.innerHTML += `<span style="color:#2ecc71">Step 2: Coordinates Received</span><br>`;
+            log.innerHTML += `<b>LAT:</b> ${lat} | <b>LON:</b> ${lon}<br><b>DATA TIME:</b> ${timeStr}<br>`;
 
-            // 2. Setup date for Track Map
+            // 2. Setup date for Track Map (10 days ago)
             const tenDaysAgo = new Date();
             tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
             const trackDate = tenDaysAgo.toISOString().split('T')[0];
 
             // 3. Update Images
             const finalTrackUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.png?longitude%2Clatitude%2Ctime&time%3E=${trackDate}&.draw=markers&.marker=10%7C5&.color=0x000000&.colorBar=%7C%7C%7C%7C%7C&.bgColor=0xffccccff`;
-            const finalChlorUrl = `
+            
+            // 5x5 degree box centered on ship
+            const finalChlorUrl = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.png?chlor_a%5B(latest)%5D%5B(0.0)%5D%5B(${lat + 2.5}):(${lat - 2.5})%5D%5B(${lon - 2.5}):(${lon + 2.5})%5D&.draw=surface&.vars=longitude%7Clatitude%7Cchlor_a&.colorBar=Rainbow2%7C%7C%7C.03%7C5%7C&.bgColor=0xffccccff`;
+
+            trackImg.src = finalTrackUrl;
+            chlorImg.src = finalChlorUrl;
+
+            log.innerHTML += `<span style="color:#3498db">Step 3: Map URLs Pushed to Images</span><br>`;
+
+        } catch (error) {
+            log.innerHTML += `<br><span style="color:#e74c3c"><b>CRITICAL FAILURE:</b></span> ${error.message}`;
+            log.innerHTML += `<br><i>Check if you can open this manually:</i> <a href="https://coastwatch.pfeg.noaa.gov/erddap/status.html" target="_blank" style="color:white">ERDDAP Status Page</a>`;
+            console.error(error);
+        }
+    }
+
+    // This ensures the script runs regardless of how the page loads
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', updateDashboard);
+    } else {
+        updateDashboard();
+    }
+</script>
+
