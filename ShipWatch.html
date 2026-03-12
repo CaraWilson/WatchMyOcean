@@ -1,3 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ship-Centered Satellite Tracker</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #eceff1; }
+        .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        #map-container { width: 100%; height: 600px; background: #cfd8dc; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+        img#sat-image { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .info { margin-top: 10px; font-size: 0.9rem; color: #546e7a; }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <h2>Select NOAA Vessel</h2>
+        <select id="ship-selector" onchange="updateShipView()">
+            <option value="">-- Select a Ship --</option>
+            <option value="CO2_SHIPS_RBrown">Ronald H. Brown</option>
+            <option value="fsuNoaaShipWTEDnrt">Bell M. Shimada</option>
+            <option value="fsuNoaaShipWTEFnrt">Rainier</option>
+            <option value="fsuNoaaShipWTEPnrt">Oscar Dyson</option>
+            <option value="fsuNoaaShipWTDHnrt">Okeanos Explorer</option>
+        </select>
+        <div id="ship-stats" class="info">Select a ship to see the latest position and satellite overlay.</div>
+    </div>
+
+    <div id="map-container">
+        <div id="loading-msg">Waiting for selection...</div>
+        <img id="sat-image" src="" style="display:none;">
+    </div>
+
+    <script>
+        
+        
+        
 async function updateShipView() {
     const datasetID = document.getElementById('ship-selector').value;
     const stats = document.getElementById('ship-stats');
