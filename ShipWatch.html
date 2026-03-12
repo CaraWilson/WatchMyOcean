@@ -2,79 +2,96 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NOAA Ship Track Mapper</title>
+    <title>NOAA Fleet Tracker</title>
     <style>
-        body { font-family: sans-serif; padding: 30px; background-color: #f4f4f9; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        select { width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 20px; cursor: pointer; }
-        .map-box { width: 100%; min-height: 500px; border: 2px solid #eee; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
-        img { max-width: 100%; height: auto; display: block; border-radius: 4px; }
-        .info { margin-top: 15px; color: #666; font-style: italic; text-align: center; }
+        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .controls { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        select { width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 5px; cursor: pointer; border: 1px solid #003366; }
+        .display-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .map-card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        img { width: 100%; height: auto; border-radius: 5px; min-height: 400px; background: #eee; }
+        h3 { margin-top: 0; color: #003366; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .status-bar { margin-top: 10px; font-size: 0.9rem; color: #555; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Vessel History (Last 10 Days)</h2>
-    
-    <select id="vessel-selector" onchange="loadShipMap()">
-        <option value="">-- Choose a Ship --</option>
-        <option value="fsuNoaaShipWTEPnrt">Oscar Dyson</option>
-        <option value="fsuNoaaShipWTEDnrt">Bell M. Shimada</option>
-        <option value="fsuNoaaShipWTEFnrt">Rainier</option>
-        <option value="fsuNoaaShipWTEEnrt">Elton Sette</option>
-        <option value="fsuNoaaShipWTERnrt">Nancy Foster</option>
-        <option value="fsuNoaaShipWTDLnrt">Pisces</option>
-    </select>
-
-    <div class="map-box">
-        <div id="placeholder-text">Please select a vessel to generate the track map.</div>
-        <img id="dynamic-map" src="" style="display:none;">
+    <div class="controls">
+        <h2>Vessel & Chlorophyll Tracker</h2>
+        <select id="vessel-selector" onchange="updateDashboard()">
+            <option value="fsuNoaaShipWTEPnrt">Oscar Dyson</option>
+            <option value="fsuNoaaShipWTEDnrt">Bell M. Shimada</option>
+            <option value="fsuNoaaShipWTEFnrt">Rainier</option>
+            <option value="fsuNoaaShipWTEEnrt">Elton Sette</option>
+            <option value="fsuNoaaShipWTERnrt">Nancy Foster</option>
+            <option value="fsuNoaaShipWTDLnrt">Pisces</option>
+        </select>
+        <div id="status" class="status-bar">Initializing...</div>
     </div>
-    
-    <div id="debug-info" class="info"></div>
+
+    <div class="display-grid">
+        <div class="map-card">
+            <h3>10-Day Vessel Track</h3>
+            <img id="track-map" src="">
+        </div>
+
+        <div class="map-card">
+            <h3>Chlorophyll (5°x5° Context)</h3>
+            <img id="chlor-map" src="">
+        </div>
+    </div>
 </div>
 
 <script>
-    function loadShipMap() {
-        const shipId = document.getElementById('vessel-selector').value;
-        const mapImg = document.getElementById('dynamic-map');
-        const placeholder = document.getElementById('placeholder-text');
-        const debug = document.getElementById('debug-info');
+    async function updateDashboard() {
+        const selector = document.getElementById('vessel-selector');
+        const shipId = selector.value;
+        const shipName = selector.options[selector.selectedIndex].text;
+        const status = document.getElementById('status');
+        const trackImg = document.getElementById('track-map');
+        const chlorImg = document.getElementById('chlor-map');
 
-        if (!shipId) {
-            mapImg.style.display = 'none';
-            placeholder.style.display = 'block';
-            return;
+        if (!shipId) return;
+
+        status.innerText = `Fetching data for ${shipName}...`;
+
+        try {
+            // 1. Fetch latest ship position to center the chlorophyll map
+            const posUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.json?latitude,longitude,time&orderByMax("time")`;
+            const response = await fetch(posUrl);
+            const data = await response.json();
+            
+            const lat = data.table.rows[0][0];
+            const lon = data.table.rows[0][1];
+
+            // 2. Setup date for 10-day track
+            const tenDaysAgo = new Date();
+            tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+            const trackDate = tenDaysAgo.toISOString().split('T')[0];
+
+            // 3. Update Map 1: The 10-day track (Using your specific URL parameters)
+            trackImg.src = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.png?longitude%2Clatitude%2Ctime&time%3E=${trackDate}&.draw=markers&.marker=10%7C5&.color=0x000000&.colorBar=%7C%7C%7C%7C%7C&.bgColor=0xffccccff`;
+
+            // 4. Update Map 2: 5x5 degree Chlorophyll box
+            const minLat = lat - 2.5;
+            const maxLat = lat + 2.5;
+            const minLon = lon - 2.5;
+            const maxLon = lon + 2.5;
+
+            chlorImg.src = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.png?chlor_a%5B(latest)%5D%5B(0.0)%5D%5B(${maxLat}):(${minLat})%5D%5B(${minLon}):(${maxLon})%5D&.draw=surface&.vars=longitude%7Clatitude%7Cchlor_a&.colorBar=Rainbow2%7C%7C%7C.03%7C5%7C&.bgColor=0xffccccff`;
+
+            status.innerText = `Currently viewing ${shipName} at Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
+
+        } catch (error) {
+            status.innerText = `Error: Could not retrieve data for ${shipName}. Vessel may be out of range or server is down.`;
+            console.error(error);
         }
-
-        // 1. Calculate the date for 10 days ago (ISO format: YYYY-MM-DD)
-        const date = new Date();
-        date.setDate(date.getDate() - 10);
-        const dateString = date.toISOString().split('T')[0];
-
-        // 2. Construct your specific ERDDAP URL template
-        // We swap the Dataset ID and the Date into your provided format
-        const url = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.png?longitude%2Clatitude%2Ctime&time%3E=${dateString}&.draw=markers&.marker=10%7C5&.color=0x000000&.colorBar=%7C%7C%7C%7C%7C&.bgColor=0xffccccff`;
-
-        // 3. Update the UI
-        placeholder.innerText = "Requesting map from ERDDAP...";
-        mapImg.style.display = 'none';
-        
-        mapImg.src = url;
-
-        mapImg.onload = () => {
-            placeholder.style.display = 'none';
-            mapImg.style.display = 'block';
-            debug.innerText = `Dataset: ${shipId} | Since: ${dateString}`;
-        };
-
-        mapImg.onerror = () => {
-            placeholder.style.display = 'block';
-            placeholder.innerText = "Error: Map could not be generated for this dataset/date range.";
-            mapImg.style.display = 'none';
-        };
     }
+
+    // Run once on load to show the default (Dyson)
+    window.onload = updateDashboard;
 </script>
 
 </body>
