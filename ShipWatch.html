@@ -2,101 +2,69 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Ship-Centered Satellite Tracker</title>
+    <title>NOAA Ship 10-Day Track</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #eceff1; }
+        body { font-family: sans-serif; padding: 20px; background: #f4f7f6; }
         .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        #map-container { width: 100%; height: 600px; background: #cfd8dc; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
-        img#sat-image { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .info { margin-top: 10px; font-size: 0.9rem; color: #546e7a; }
+        #map-display { width: 100%; min-height: 600px; background: #ddd; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        img#track-map { max-width: 100%; height: auto; border: 1px solid #ccc; display: none; }
     </style>
 </head>
 <body>
 
     <div class="controls">
-        <h2>Select NOAA Vessel</h2>
-        <select id="ship-selector" onchange="updateShipView()">
-            <option value="">-- Select a Ship --</option>
-            <option value="CO2_SHIPS_RBrown">Ronald H. Brown</option>
+        <h2>Vessel Track (Last 10 Days)</h2>
+        <select id="ship-id" onchange="generateTrackMap()">
+            <option value="">-- Select a Vessel --</option>
             <option value="fsuNoaaShipWTEDnrt">Bell M. Shimada</option>
             <option value="fsuNoaaShipWTEFnrt">Rainier</option>
             <option value="fsuNoaaShipWTEPnrt">Oscar Dyson</option>
-            <option value="fsuNoaaShipWTDHnrt">Okeanos Explorer</option>
         </select>
-        <div id="ship-stats" class="info">Select a ship to see the latest position and satellite overlay.</div>
+        <p id="status-text">Select a ship to generate the ERDDAP track map.</p>
     </div>
 
-    <div id="map-container">
-        <div id="loading-msg">Waiting for selection...</div>
-        <img id="sat-image" src="" style="display:none;">
+    <div id="map-display">
+        <div id="loader">Map will appear here...</div>
+        <img id="track-map" src="">
     </div>
 
     <script>
-        
-        
-        
-async function updateShipView() {
-    const datasetID = document.getElementById('ship-selector').value;
-    const stats = document.getElementById('ship-stats');
-    const satImg = document.getElementById('sat-image');
-    const loading = document.getElementById('loading-msg');
+        function generateTrackMap() {
+            const shipId = document.getElementById('ship-id').value;
+            const mapImg = document.getElementById('track-map');
+            const loader = document.getElementById('loader');
+            const status = document.getElementById('status-text');
 
-    if (!datasetID) return;
+            if (!shipId) return;
 
-    loading.style.display = 'block';
-    loading.innerText = "Querying ERDDAP...";
-    satImg.style.display = 'none';
+            // 1. Calculate 10 days ago
+            const tenDaysAgo = new Date();
+            tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+            const dateString = tenDaysAgo.toISOString();
 
-    // We use .jsonp (JSON with Padding) if .json fails, 
-    // but first let's try the standard JSON with a cache-buster
-    const erddapUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${datasetID}.json?time%2Clatitude%2Clongitude&orderByMax(%22time%22)`;
+            loader.innerText = "Generating map from ERDDAP...";
+            mapImg.style.display = 'none';
 
-    try {
-        const response = await fetch(erddapUrl);
-        
-        if (!response.ok) {
-            throw new Error(`ERDDAP responded with status: ${response.status}`);
+            // 2. Build ERDDAP Map URL
+            // Using the .pngp (png with padding/background) format
+            const baseUrl = "https://coastwatch.pfeg.noaa.gov/erddap/tabledap/";
+            const query = `.pngp?longitude,latitude,time&time>=${dateString}&.draw=linesAndMarkers`;
+            
+            const finalUrl = `${baseUrl}${shipId}${query}`;
+
+            // 3. Update Image
+            mapImg.src = finalUrl;
+            
+            mapImg.onload = () => {
+                loader.style.display = 'none';
+                mapImg.style.display = 'block';
+                status.innerText = `Showing track since ${tenDaysAgo.toLocaleDateString()}`;
+            };
+
+            mapImg.onerror = () => {
+                loader.innerText = "Error: Could not generate map. The ship may not have data for the last 10 days.";
+            };
         }
-
-        const data = await response.json();
-        
-        // Extracting data from ERDDAP's nested JSON structure
-        const columnNames = data.table.columnNames;
-        const rows = data.table.rows;
-
-        if (rows.length === 0) {
-            throw new Error("No data found for this ship.");
-        }
-
-        // Mapping columns to indices
-        const timeIdx = columnNames.indexOf('time');
-        const latIdx = columnNames.indexOf('latitude');
-        const lonIdx = columnNames.indexOf('longitude');
-
-        const lat = rows[0][latIdx];
-        const lon = rows[0][lonIdx];
-        const time = rows[0][timeIdx];
-
-        stats.innerHTML = `<strong>Ship:</strong> ${datasetID} <br> <strong>Lat:</strong> ${lat.toFixed(4)} | <strong>Lon:</strong> ${lon.toFixed(4)}`;
-
-        // Define Bounding Box for the Satellite Image
-        const delta = 0.5; // size of the box in degrees
-        const minLat = lat - delta;
-        const maxLat = lat + delta;
-        const minLon = lon - delta;
-        const maxLon = lon + delta;
-
-        // Using the NRT (Near Real Time) VIIRS Chlorophyll layer as an example
-        const satUrl = `https://coastwatch.pfeg.noaa.gov/erddap/wms/pfehVIIRSnrt/request?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=pfehVIIRSnrt:chlor_a&STYLES=etc&CRS=EPSG:4326&BBOX=${minLat},${minLon},${maxLat},${maxLon}&WIDTH=800&HEIGHT=600&FORMAT=image/png`;
-
-        satImg.src = satUrl;
-        satImg.onload = () => {
-            loading.style.display = 'none';
-            satImg.style.display = 'block';
-        };
-
-    } catch (error) {
-        console.error("Full Error Details:", error);
-        loading.innerText = "Error: " + error.message;
-    }
-}
+    </script>
+</body>
+</html>
