@@ -2,27 +2,37 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NOAA Ship Tracker - Debug Mode</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOAA Fleet & Environmental Tracker</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; }
-        .container { max-width: 1100px; margin: 0 auto; }
-        .controls { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        select { width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 5px; border: 1px solid #003366; }
-        .display-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .map-card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        img { width: 100%; height: auto; border-radius: 5px; min-height: 400px; background: #eee; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; background: #f0f2f5; color: #1c1e21; }
+        .container { max-width: 1200px; margin: 0 auto; }
         
-        /* Debug Panel Styling */
-        .debug-panel { background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 8px; margin-top: 20px; font-family: monospace; font-size: 0.85rem; line-height: 1.5; }
-        .debug-title { color: #f1c40f; font-weight: bold; margin-bottom: 10px; display: block; }
-        .error-text { color: #e74c3c; font-weight: bold; }
+        /* Header and Selector Area */
+        .controls { background: white; padding: 25px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        h2 { margin-top: 0; color: #003366; font-size: 1.5rem; }
+        select { width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 8px; border: 2px solid #003366; background-color: #fff; cursor: pointer; }
+        
+        /* Map Display Grid */
+        .display-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; }
+        .map-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        h3 { margin-top: 0; color: #003366; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; font-size: 1.1rem; }
+        img { width: 100%; height: auto; border-radius: 6px; min-height: 400px; background: #f8f9fa; border: 1px solid #eee; }
+        
+        /* Debug / System Log Panel */
+        .debug-panel { background: #2c3e50; color: #ecf0f1; padding: 20px; border-radius: 12px; margin-top: 20px; font-family: 'Courier New', Courier, monospace; font-size: 0.85rem; line-height: 1.6; }
+        .debug-title { color: #f1c40f; font-weight: bold; margin-bottom: 8px; display: block; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        .log-entry { margin-bottom: 4px; }
+        .success { color: #2ecc71; }
+        .error { color: #e74c3c; font-weight: bold; }
+        .link { color: #3498db; text-decoration: underline; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="controls">
-        <h2>Vessel Tracker (Diagnostic Mode)</h2>
+        <h2>Vessel & Chlorophyll Tracker</h2>
         <select id="vessel-selector" onchange="updateDashboard()">
             <option value="fsuNoaaShipWTEPnrt">Oscar Dyson</option>
             <option value="fsuNoaaShipWTEDnrt">Bell M. Shimada</option>
@@ -36,81 +46,86 @@
     <div class="display-grid">
         <div class="map-card">
             <h3>10-Day Vessel Track</h3>
-            <img id="track-map" src="">
+            <img id="track-map" src="" alt="Vessel Track Map">
         </div>
+
         <div class="map-card">
-            <h3>Chlorophyll (5°x5° Context)</h3>
-            <img id="chlor-map" src="">
+            <h3>Chlorophyll (5°x5° Center)</h3>
+            <img id="chlor-map" src="" alt="Chlorophyll Map">
         </div>
     </div>
 
     <div id="debug-log" class="debug-panel">
-        <span class="debug-title">[SYSTEM LOG]</span>
-        <div id="log-content">Waiting for selection...</div>
+        <span class="debug-title">[SYSTEM DIAGNOSTICS]</span>
+        <div id="log-content">Initializing tracker...</div>
     </div>
 </div>
 
-    <script>
-    // This function handles the actual work
+<script>
     async function updateDashboard() {
         const selector = document.getElementById('vessel-selector');
+        const shipId = selector.value;
+        const shipName = selector.options[selector.selectedIndex].text;
         const log = document.getElementById('log-content');
         const trackImg = document.getElementById('track-map');
         const chlorImg = document.getElementById('chlor-map');
 
-        // Get the current ID from the selector
-        const shipId = selector.value;
-
-        log.innerHTML = `<b>[${new Date().toLocaleTimeString()}]</b> Initializing request for ${shipId}...<br>`;
-
+        // Reset display
+        log.innerHTML = `<div class="log-entry">[${new Date().toLocaleTimeString()}] Starting request for <b>${shipName}</b>...</div>`;
+        
         try {
-            // 1. Fetch Latest Position
-            const posUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.json?latitude,longitude,time&orderByMax("time")`;
-            log.innerHTML += `Step 1: Contacting ERDDAP...<br>`;
+            // 1. Fetch latest position from ERDDAP via CORS Proxy
+            const targetUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.json?latitude,longitude,time&orderByMax("time")`;
+            const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(targetUrl);
+            
+            log.innerHTML += `<div class="log-entry">Step 1: Contacting ERDDAP via Proxy...</div>`;
 
-            const response = await fetch(posUrl);
+            const response = await fetch(proxyUrl);
             
             if (!response.ok) {
-                throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+                throw new Error(`Connection failed (Status ${response.status})`);
             }
 
             const data = await response.json();
             
             if (!data.table || !data.table.rows.length) {
-                throw new Error("ERDDAP returned no rows for this ship.");
+                throw new Error("ERDDAP returned no current data for this vessel.");
             }
 
             const lat = data.table.rows[0][0];
             const lon = data.table.rows[0][1];
             const timeStr = data.table.rows[0][2];
 
-            log.innerHTML += `<span style="color:#2ecc71">Step 2: Coordinates Received</span><br>`;
-            log.innerHTML += `<b>LAT:</b> ${lat} | <b>LON:</b> ${lon}<br><b>DATA TIME:</b> ${timeStr}<br>`;
+            log.innerHTML += `<div class="log-entry success">Step 2: Coordinates Received!</div>`;
+            log.innerHTML += `<div class="log-entry"><b>LAT:</b> ${lat.toFixed(4)} | <b>LON:</b> ${lon.toFixed(4)}</div>`;
+            log.innerHTML += `<div class="log-entry"><b>TIMESTAMP:</b> ${timeStr}</div>`;
 
-            // 2. Setup date for Track Map (10 days ago)
+            // 2. Prepare Date for 10-Day Track
             const tenDaysAgo = new Date();
             tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
             const trackDate = tenDaysAgo.toISOString().split('T')[0];
 
-            // 3. Update Images
+            // 3. Construct URLs
+            // Track Map (PNG format)
             const finalTrackUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.png?longitude%2Clatitude%2Ctime&time%3E=${trackDate}&.draw=markers&.marker=10%7C5&.color=0x000000&.colorBar=%7C%7C%7C%7C%7C&.bgColor=0xffccccff`;
             
-            // 5x5 degree box centered on ship
+            // Chlorophyll Map (5x5 deg box centered on lat/lon)
             const finalChlorUrl = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.png?chlor_a%5B(latest)%5D%5B(0.0)%5D%5B(${lat + 2.5}):(${lat - 2.5})%5D%5B(${lon - 2.5}):(${lon + 2.5})%5D&.draw=surface&.vars=longitude%7Clatitude%7Cchlor_a&.colorBar=Rainbow2%7C%7C%7C.03%7C5%7C&.bgColor=0xffccccff`;
 
+            // Update Images
             trackImg.src = finalTrackUrl;
             chlorImg.src = finalChlorUrl;
 
-            log.innerHTML += `<span style="color:#3498db">Step 3: Map URLs Pushed to Images</span><br>`;
+            log.innerHTML += `<div class="log-entry success">Step 3: Map requests sent to images.</div>`;
 
         } catch (error) {
-            log.innerHTML += `<br><span style="color:#e74c3c"><b>CRITICAL FAILURE:</b></span> ${error.message}`;
-            log.innerHTML += `<br><i>Check if you can open this manually:</i> <a href="https://coastwatch.pfeg.noaa.gov/erddap/status.html" target="_blank" style="color:white">ERDDAP Status Page</a>`;
+            log.innerHTML += `<div class="log-entry error">CRITICAL FAILURE: ${error.message}</div>`;
+            log.innerHTML += `<div class="log-entry"><i>Suggestion: Check if the <a class="link" href="https://coastwatch.pfeg.noaa.gov/erddap/status.html" target="_blank">NOAA ERDDAP Status</a> is green.</i></div>`;
             console.error(error);
         }
     }
 
-    // This ensures the script runs regardless of how the page loads
+    // Auto-initialize when the page is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', updateDashboard);
     } else {
@@ -118,3 +133,5 @@
     }
 </script>
 
+</body>
+</html>
