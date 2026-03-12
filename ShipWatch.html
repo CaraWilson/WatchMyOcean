@@ -14,10 +14,10 @@
 <body>
 
     <div class="controls">
-        <h2>Select NOAA Vessel</h2>
+        <h2>Select a NOAA Vessel</h2>
         <select id="ship-selector" onchange="updateShipView()">
             <option value="">-- Select a Ship --</option>
-            <option value="CO2_SHIPS_RBrown">Ronald H. Brown</option>
+            <option value="fsuNoaaShipWTECnrt">Ronald H. Brown</option>
             <option value="fsuNoaaShipWTEDnrt">Bell M. Shimada</option>
             <option value="fsuNoaaShipWTEFnrt">Rainier</option>
             <option value="fsuNoaaShipWTEPnrt">Oscar Dyson</option>
@@ -55,11 +55,11 @@
 
                 stats.innerHTML = `<strong>Latest Lat:</strong> ${lat.toFixed(4)} | <strong>Lon:</strong> ${lon.toFixed(4)} | <strong>Time:</strong> ${new Date(time).toLocaleString()}`;
 
-                // 2. Define the Bounding Box (0.5 degree spread)
-                const minLat = lat - 0.25;
-                const maxLat = lat + 0.25;
-                const minLon = lon - 0.25;
-                const maxLon = lon + 0.25;
+                // 2. Define the Bounding Box (2.5 degree spread)
+                const minLat = lat - 2.5;
+                const maxLat = lat + 2.5;
+                const minLon = lon - 2.5;
+                const maxLon = lon + 2.5;
 
                 // 3. Generate Satellite URL (Using NOAA CoastWatch WMS as an example)
                 // This is a template; you'll need to point this to your preferred satellite product (VIIRS, MODIS, etc.)
