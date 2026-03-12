@@ -2,69 +2,79 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NOAA Ship 10-Day Track</title>
+    <title>NOAA Ship Track Mapper</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f7f6; }
-        .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        #map-display { width: 100%; min-height: 600px; background: #ddd; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-        img#track-map { max-width: 100%; height: auto; border: 1px solid #ccc; display: none; }
+        body { font-family: sans-serif; padding: 30px; background-color: #f4f4f9; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        select { width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 20px; cursor: pointer; }
+        .map-box { width: 100%; min-height: 500px; border: 2px solid #eee; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+        img { max-width: 100%; height: auto; display: block; border-radius: 4px; }
+        .info { margin-top: 15px; color: #666; font-style: italic; text-align: center; }
     </style>
 </head>
 <body>
 
-    <div class="controls">
-        <h2>Vessel Track (Last 10 Days)</h2>
-        <select id="ship-id" onchange="generateTrackMap()">
-            <option value="">-- Select a Vessel --</option>
-            <option value="fsuNoaaShipWTEDnrt">Bell M. Shimada</option>
-            <option value="fsuNoaaShipWTEFnrt">Rainier</option>
-            <option value="fsuNoaaShipWTEPnrt">Oscar Dyson</option>
-        </select>
-        <p id="status-text">Select a ship to generate the ERDDAP track map.</p>
+<div class="container">
+    <h2>Vessel History (Last 10 Days)</h2>
+    
+    <select id="vessel-selector" onchange="loadShipMap()">
+        <option value="">-- Choose a Ship --</option>
+        <option value="fsuNoaaShipWTEPnrt">Oscar Dyson</option>
+        <option value="fsuNoaaShipWTEDnrt">Bell M. Shimada</option>
+        <option value="fsuNoaaShipWTEFnrt">Rainier</option>
+        <option value="fsuNoaaShipWTEA">Thomas Jefferson</option>
+        <option value="CO2_SHIPS_RBrown">Ronald H. Brown</option>
+    </select>
+
+    <div class="map-box">
+        <div id="placeholder-text">Please select a vessel to generate the track map.</div>
+        <img id="dynamic-map" src="" style="display:none;">
     </div>
+    
+    <div id="debug-info" class="info"></div>
+</div>
 
-    <div id="map-display">
-        <div id="loader">Map will appear here...</div>
-        <img id="track-map" src="">
-    </div>
+<script>
+    function loadShipMap() {
+        const shipId = document.getElementById('vessel-selector').value;
+        const mapImg = document.getElementById('dynamic-map');
+        const placeholder = document.getElementById('placeholder-text');
+        const debug = document.getElementById('debug-info');
 
-    <script>
-        function generateTrackMap() {
-            const shipId = document.getElementById('ship-id').value;
-            const mapImg = document.getElementById('track-map');
-            const loader = document.getElementById('loader');
-            const status = document.getElementById('status-text');
-
-            if (!shipId) return;
-
-            // 1. Calculate 10 days ago
-            const tenDaysAgo = new Date();
-            tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
-            const dateString = tenDaysAgo.toISOString();
-
-            loader.innerText = "Generating map from ERDDAP...";
+        if (!shipId) {
             mapImg.style.display = 'none';
-
-            // 2. Build ERDDAP Map URL
-            // Using the .pngp (png with padding/background) format
-            const baseUrl = "https://coastwatch.pfeg.noaa.gov/erddap/tabledap/";
-            const query = `.pngp?longitude,latitude,time&time>=${dateString}&.draw=linesAndMarkers`;
-            
-            const finalUrl = `${baseUrl}${shipId}${query}`;
-
-            // 3. Update Image
-            mapImg.src = finalUrl;
-            
-            mapImg.onload = () => {
-                loader.style.display = 'none';
-                mapImg.style.display = 'block';
-                status.innerText = `Showing track since ${tenDaysAgo.toLocaleDateString()}`;
-            };
-
-            mapImg.onerror = () => {
-                loader.innerText = "Error: Could not generate map. The ship may not have data for the last 10 days.";
-            };
+            placeholder.style.display = 'block';
+            return;
         }
-    </script>
+
+        // 1. Calculate the date for 10 days ago (ISO format: YYYY-MM-DD)
+        const date = new Date();
+        date.setDate(date.getDate() - 10);
+        const dateString = date.toISOString().split('T')[0];
+
+        // 2. Construct your specific ERDDAP URL template
+        // We swap the Dataset ID and the Date into your provided format
+        const url = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.png?longitude%2Clatitude%2Ctime&time%3E=${dateString}&.draw=markers&.marker=10%7C5&.color=0x000000&.colorBar=%7C%7C%7C%7C%7C&.bgColor=0xffccccff`;
+
+        // 3. Update the UI
+        placeholder.innerText = "Requesting map from ERDDAP...";
+        mapImg.style.display = 'none';
+        
+        mapImg.src = url;
+
+        mapImg.onload = () => {
+            placeholder.style.display = 'none';
+            mapImg.style.display = 'block';
+            debug.innerText = `Dataset: ${shipId} | Since: ${dateString}`;
+        };
+
+        mapImg.onerror = () => {
+            placeholder.style.display = 'block';
+            placeholder.innerText = "Error: Map could not be generated for this dataset/date range.";
+            mapImg.style.display = 'none';
+        };
+    }
+</script>
+
 </body>
 </html>
