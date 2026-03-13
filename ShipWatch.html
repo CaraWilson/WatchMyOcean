@@ -15,7 +15,6 @@
     </style>
 </head>
 <body>
-
 <div class="container">
     <h2>Vessel History (Last 10 Days)</h2>
     <select id="vessel-selector" onchange="loadShipMap()">
@@ -26,19 +25,15 @@
         <option value="fsuNoaaShipWTERnrt">Nancy Foster (Atlantic)</option>
         <option value="fsuNoaaShipWTDLnrt">Pisces (Gulf of Mexico)</option>
     </select>
-
     <div class="map-box">
         <div id="placeholder-text">Loading...</div>
         <img id="dynamic-map" src="" alt="Ship track map" style="display:none;">
     </div>
-
     <div id="ship-info" class="info"></div>
 </div>
-
 <script>
     let currentShipName = "";
 
-    // Global callback function for ERDDAP
     function handleLatestShipPosition(data) {
         const info = document.getElementById("ship-info");
         try {
@@ -46,20 +41,18 @@
             const time = row[0];
             const lat = Number(row[1]);
             const lon = Number(row[2]);
-            
-            // Normalize longitude for display if needed
-            const lonDisplay = lon > 180 ? lon - 360 : lon;
+            const lonForMap = lon > 180 ? lon - 360 : lon;
 
             if (Number.isNaN(lat) || Number.isNaN(lon)) {
                 throw new Error("Invalid coordinates");
             }
 
+            // Updated to your specific one-line format
             info.innerHTML =
                 `Vessel: <b>${currentShipName}</b><br>` +
-                `Latest Position: <span class="coords-text">${lat.toFixed(4)}, ${lonDisplay.toFixed(4)}</span><br>` +
-                `<small>Observed: ${new Date(time).toLocaleString()}</small>`;
-        } catch (e) {
-            console.error("Data error:", e);
+                `Latest Position: <span class="coords-text">${lat.toFixed(2)}, ${lon.toFixed(2)} (${lonForMap.toFixed(2)})</span> ` +
+                `Observed: ${new Date(time).toLocaleString()}`;
+        } catch {
             info.innerHTML = `Vessel: <b>${currentShipName}</b><br><small>(Coordinates temporarily unavailable)</small>`;
         }
     }
@@ -67,25 +60,21 @@
     function loadShipMap() {
         const selector = document.getElementById("vessel-selector");
         const shipId = selector.value;
-        
-        // Remove region parentheses for the dashboard text
         const shipName = selector.options[selector.selectedIndex].text.replace(/\s*\(.*?\)\s*/g, "").trim();
-        currentShipName = shipName;
 
+        currentShipName = shipName;
         const mapImg = document.getElementById("dynamic-map");
         const placeholder = document.getElementById("placeholder-text");
         const info = document.getElementById("ship-info");
 
         if (!shipId) return;
 
-        info.innerHTML = `Vessel: <b>${shipName}</b><br><small>Updating map and coordinates...</small>`;
+        info.innerHTML = `Vessel: <b>${shipName}</b><br><small>Fetching coordinates...</small>`;
 
-        // 1. Calculate 10-day window
         const date = new Date();
         date.setDate(date.getDate() - 10);
         const dateString = date.toISOString().split("T")[0];
 
-        // 2. Load Map Image
         mapImg.style.display = "none";
         placeholder.style.display = "block";
         placeholder.innerText = "Requesting map...";
@@ -97,19 +86,24 @@
             mapImg.style.display = "block";
         };
 
-        // 3. Request JSONP Data
+        mapImg.onerror = () => {
+            placeholder.innerText = "Map could not be loaded.";
+        };
+
         const oldScript = document.getElementById("jsonp-script");
         if (oldScript) oldScript.remove();
 
         const script = document.createElement("script");
         script.id = "jsonp-script";
-        
-        // Important: Change extension to .jsonp and add a timestamp cache-buster
-        const cacheBuster = new Date().getTime();
-        script.src = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.jsonp?time,latitude,longitude&orderByMax("time")&.jsonp=handleLatestShipPosition&_=${cacheBuster}`;
+        // Reverted to .json as requested since it was working for you
+        script.src =
+            `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.json` +
+            `?time,latitude,longitude` +
+            `&orderByMax("time")` +
+            `&.jsonp=handleLatestShipPosition`;
 
         script.onerror = () => {
-            info.innerHTML = `Vessel: <b>${shipName}</b><br><small>(Connection error to NOAA servers)</small>`;
+            info.innerHTML = `Vessel: <b>${shipName}</b><br><small>(Coordinates temporarily unavailable)</small>`;
         };
 
         document.body.appendChild(script);
