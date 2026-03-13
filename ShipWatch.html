@@ -6,11 +6,12 @@
     <style>
         body { font-family: sans-serif; padding: 30px; background-color: #f4f4f9; }
         .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        select { width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 20px; cursor: pointer; }
-        .map-box { width: 100%; min-height: 500px; border: 2px solid #eee; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+        select { width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 8px; border: 2px solid #003366; margin-bottom: 20px; cursor: pointer; }
+        .map-box { width: 100%; min-height: 500px; border: 2px solid #eee; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #fafafa; position: relative; }
         img { max-width: 100%; height: auto; display: block; border-radius: 4px; }
         .info { margin-top: 15px; color: #333; text-align: center; line-height: 1.6; font-size: 1.1rem; }
         .coords-text { font-weight: bold; color: #003366; }
+        #placeholder-text { position: absolute; z-index: 1; color: #666; }
     </style>
 </head>
 <body>
@@ -28,7 +29,7 @@
     </select>
 
     <div class="map-box">
-        <div id="placeholder-text">Loading map and data...</div>
+        <div id="placeholder-text">Loading...</div>
         <img id="dynamic-map" src="" style="display:none;">
     </div>
     
@@ -47,46 +48,56 @@
 
         if (!shipId) return;
 
-        // Reset UI
-        debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>Updating coordinates...</small>`;
-        mapImg.style.display = 'none';
-        placeholder.style.display = 'block';
-
-        // 1. Update the Map (Standard Image Load - Usually works fine)
+        // 1. SET THE MAP IMMEDIATELY (Reliable, no CORS needed)
         const date = new Date();
         date.setDate(date.getDate() - 10);
         const dateString = date.toISOString().split('T')[0];
+        
+        mapImg.style.display = 'none';
+        placeholder.style.display = 'block';
+        placeholder.innerText = "Requesting map...";
+        
         mapImg.src = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.png?longitude%2Clatitude%2Ctime&time%3E=${dateString}&.draw=markers&.marker=10%7C5&.color=0x000000&.colorBar=%7C%7C%7C%7C%7C&.bgColor=0xffccccff`;
-
-        // 2. Fetch the actual Latitude and Longitude using a CORS bridge
-        const targetUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.json?time,latitude,longitude&orderByMax("time")`;
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-
-        try {
-            const response = await fetch(proxyUrl);
-            const wrapper = await response.json();
-            const data = JSON.parse(wrapper.contents); // AllOrigins returns data inside 'contents'
-
-            const row = data.table.rows[0];
-            const lat = row[1].toFixed(4);
-            const lon = row[2].toFixed(4);
-            const time = new Date(row[0]).toLocaleString();
-
-            debug.innerHTML = `Vessel: <b>${shipName}</b><br>` +
-                             `Latest Position: <span class="coords-text">${lat}, ${lon}</span><br>` +
-                             `<small>Observed: ${time}</small>`;
-        } catch (err) {
-            console.error("Fetch Error:", err);
-            debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>Coordinates unavailable (Security block/Server busy)</small>`;
-        }
 
         mapImg.onload = () => {
             placeholder.style.display = 'none';
             mapImg.style.display = 'block';
         };
+
+        // 2. FETCH CSV DATA FOR TEXT (Requires CORS Bridge)
+        debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>Fetching coordinates...</small>`;
+        
+        const targetCsvUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.csv?time,latitude,longitude&orderByMax("time")`;
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetCsvUrl)}`;
+
+        try {
+            const response = await fetch(proxyUrl);
+            const wrapper = await response.json();
+            
+            // AllOrigins returns the CSV as a single string inside 'contents'
+            const csvData = wrapper.contents; 
+            
+            // ERDDAP CSV format: 
+            // Line 0: headers
+            // Line 1: units
+            // Line 2: the actual data we want
+            const lines = csvData.split('\n');
+            const dataRow = lines[2].split(',');
+
+            const time = dataRow[0].replace(/"/g, '');
+            const lat = parseFloat(dataRow[1]).toFixed(4);
+            const lon = parseFloat(dataRow[2]).toFixed(4);
+
+            debug.innerHTML = `Vessel: <b>${shipName}</b><br>` +
+                             `Latest Position: <span class="coords-text">${lat}, ${lon}</span><br>` +
+                             `<small>Observed: ${new Date(time).toLocaleString()}</small>`;
+
+        } catch (err) {
+            console.error("CSV Fetch failed:", err);
+            debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>(Coordinates currently blocked by browser security)</small>`;
+        }
     }
 
-    // Initialize on load
     window.onload = loadShipMap;
 </script>
 
