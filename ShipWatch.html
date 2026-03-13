@@ -8,21 +8,21 @@
         .container { max-width: 1400px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         select { width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 8px; border: 2px solid #003366; margin-bottom: 20px; }
         
-        /* Dashboard Layout */
         .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-        .map-box { background: #fafafa; border: 1px solid #ddd; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 350px; position: relative; }
-        .map-box h3 { margin: 5px 0; font-size: 0.9rem; color: #003366; text-transform: uppercase; }
+        .map-box { background: #fafafa; border: 1px solid #ddd; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 400px; position: relative; }
+        .map-box h3 { margin: 5px 0; font-size: 0.85rem; color: #003366; text-transform: uppercase; }
         
-        img { max-width: 100%; height: auto; border-radius: 4px; display: none; }
-        .placeholder { color: #888; font-size: 0.8rem; text-align: center; }
+        img { max-width: 100%; height: auto; border-radius: 4px; display: none; margin-bottom: 10px; }
+        .placeholder { color: #888; font-size: 0.8rem; text-align: center; margin-top: 50px; }
         
+        /* Widget Styling */
+        .controls-widget { background: #eee; width: 100%; padding: 8px; border-radius: 4px; display: flex; gap: 5px; align-items: center; justify-content: center; font-size: 0.75rem; margin-top: auto; }
+        .controls-widget input { width: 45px; padding: 3px; border: 1px solid #ccc; border-radius: 3px; }
+        .update-btn { background: #003366; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; }
+        .update-btn:hover { background: #0055aa; }
+
         .info { margin-top: 20px; padding: 15px; background: #eef2f7; border-radius: 8px; text-align: center; line-height: 1.6; }
-        .coords-text { font-weight: bold; color: #003366; }
-        .url-debug { font-size: 0.75rem; color: #777; margin-top: 5px; word-break: break-all; }
-        
-        /* Responsive: stack on small screens */
         @media (max-width: 1000px) { .dashboard-grid { grid-template-columns: 1fr 1fr; } }
-        @media (max-width: 600px) { .dashboard-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -40,15 +40,61 @@
     </select>
 
     <div class="dashboard-grid">
-        <div class="map-box"><h3>10-Day Track</h3><div class="placeholder">Loading...</div><img id="track-map"></div>
-        <div class="map-box"><h3>Chlorophyll (Daily)</h3><div class="placeholder">Waiting...</div><img id="chla-d"></div>
-        <div class="map-box"><h3>Chlorophyll (Weekly)</h3><div class="placeholder">Waiting...</div><img id="chla-w"></div>
+        <div class="map-box" id="box-track"><h3>10-Day Track</h3><div class="placeholder">Loading...</div><img id="track-map"></div>
         
-        <div class="map-box"><h3>SST</h3><div class="placeholder">Waiting...</div><img id="sst"></div>
-        <div class="map-box"><h3>SST Anomaly</h3><div class="placeholder">Waiting...</div><img id="sst-anom"></div>
-        <div class="map-box"><h3>Winds (1-Day)</h3><div class="placeholder">Waiting...</div><img id="wind"></div>
+        <div class="map-box" id="box-chla-d">
+            <h3>Chlorophyll (Daily)</h3><div class="placeholder">Waiting...</div><img id="chla-d">
+            <div class="controls-widget">
+                Min: <input type="text" id="min-chla-d" value="0.03"> 
+                Max: <input type="text" id="max-chla-d" value="5">
+                <button class="update-btn" onclick="refreshMap('chla-d')">Set</button>
+            </div>
+        </div>
+
+        <div class="map-box" id="box-chla-w">
+            <h3>Chlorophyll (Weekly)</h3><div class="placeholder">Waiting...</div><img id="chla-w">
+            <div class="controls-widget">
+                Min: <input type="text" id="min-chla-w" value="0.03"> 
+                Max: <input type="text" id="max-chla-w" value="5">
+                <button class="update-btn" onclick="refreshMap('chla-w')">Set</button>
+            </div>
+        </div>
         
-        <div class="map-box" style="grid-column: span 3;"><h3>Sea Surface Height (SSH)</h3><div class="placeholder">Waiting...</div><img id="ssh"></div>
+        <div class="map-box" id="box-sst">
+            <h3>SST (°C)</h3><div class="placeholder">Waiting...</div><img id="sst">
+            <div class="controls-widget">
+                Min: <input type="text" id="min-sst" value="10"> 
+                Max: <input type="text" id="max-sst" value="22">
+                <button class="update-btn" onclick="refreshMap('sst')">Set</button>
+            </div>
+        </div>
+
+        <div class="map-box" id="box-sst-anom">
+            <h3>SST Anomaly</h3><div class="placeholder">Waiting...</div><img id="sst-anom">
+            <div class="controls-widget">
+                Min: <input type="text" id="min-sst-anom" value="-2"> 
+                Max: <input type="text" id="max-sst-anom" value="2">
+                <button class="update-btn" onclick="refreshMap('sst-anom')">Set</button>
+            </div>
+        </div>
+
+        <div class="map-box" id="box-wind">
+            <h3>Winds (m/s)</h3><div class="placeholder">Waiting...</div><img id="wind">
+            <div class="controls-widget">
+                Min: <input type="text" id="min-wind" value="0"> 
+                Max: <input type="text" id="max-wind" value="15">
+                <button class="update-btn" onclick="refreshMap('wind')">Set</button>
+            </div>
+        </div>
+        
+        <div class="map-box" style="grid-column: span 3;" id="box-ssh">
+            <h3>Sea Surface Height (m)</h3><div class="placeholder">Waiting...</div><img id="ssh">
+            <div class="controls-widget">
+                Min: <input type="text" id="min-ssh" value="-0.5"> 
+                Max: <input type="text" id="max-ssh" value="0.5">
+                <button class="update-btn" onclick="refreshMap('ssh')">Set</button>
+            </div>
+        </div>
     </div>
 
     <div id="ship-info" class="info"></div>
@@ -56,24 +102,27 @@
 
 <script>
     let currentShipName = "";
+    let globalCoords = "";
 
-    function updateMap(id, url) {
+    function getMapUrl(id, coords) {
+        const min = document.getElementById(`min-${id}`).value;
+        const max = document.getElementById(`max-${id}`).value;
+        
+        const urls = {
+            'chla-d': `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.png?chlor_a[(last)][(0.0)]${coords}&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||${min}|${max}|`,
+            'chla-w': `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaWeekly.png?chlor_a[(last)][(0.0)]${coords}&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||${min}|${max}|`,
+            'sst': `https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW.png?CRW_SST[(last)]${coords}&.vars=longitude|latitude|CRW_SST&.colorBar=|||${min}|${max}|`,
+            'sst-anom': `https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW.png?CRW_SSTANOMALY[(last)]${coords}&.vars=longitude|latitude|CRW_SSTANOMALY&.colorBar=BlueWhiteRed|||${min}|${max}|`,
+            'wind': `https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdQCwindproducts1day.png?wind_speed[(last)][(10.0)]${coords}&.colorBar=|||${min}|${max}|`,
+            'ssh': `https://coastwatch.noaa.gov/erddap/griddap/noaacweddymesiplusdaily.png?ssh[(last)]${coords}&.vars=longitude|latitude|ssh&.colorBar=|||${min}|${max}|`
+        };
+        return urls[id];
+    }
+
+    function refreshMap(id) {
+        if (!globalCoords) return;
         const img = document.getElementById(id);
-        const box = img.parentElement;
-        const placeholder = box.querySelector('.placeholder');
-        
-        img.style.display = 'none';
-        placeholder.style.display = 'block';
-        placeholder.innerText = "Loading data...";
-        
-        img.src = url;
-        img.onload = () => {
-            placeholder.style.display = 'none';
-            img.style.display = 'block';
-        };
-        img.onerror = () => {
-            placeholder.innerText = "No data for this region.";
-        };
+        img.src = getMapUrl(id, globalCoords);
     }
 
     function handleLatestShipPosition(data) {
@@ -89,22 +138,23 @@
             const sLat = (lat - 2.5).toFixed(2);
             const wLon = (lonForMap - 2.5).toFixed(2);
             const eLon = (lonForMap + 2.5).toFixed(2);
-            const coords = `[(${nLat}):(${sLat})][(${wLon}):(${eLon})]`;
+            globalCoords = `[(${nLat}):(${sLat})][(${wLon}):(${eLon})]`;
 
             const timeStr = new Date(time).toLocaleString(undefined, { timeZoneName: 'short' });
-            info.innerHTML = `Vessel: <b>${currentShipName}</b> | Latest Position: <span class="coords-text">${lat.toFixed(2)}, ${lon.toFixed(2)}</span> | Observed: ${timeStr}`;
+            info.innerHTML = `Vessel: <b>${currentShipName}</b> | Position: <b>${lat.toFixed(2)}, ${lon.toFixed(2)}</b> | Observed: ${timeStr}`;
 
-            // Map Updates
-            updateMap('chla-d', `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.png?chlor_a[(last)][(0.0)]${coords}&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||.03|5|`);
-            updateMap('chla-w', `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaWeekly.png?chlor_a[(last)][(0.0)]${coords}&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||.03|5|`);
-            updateMap('sst', `https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW.png?CRW_SST[(last)]${coords}&.vars=longitude|latitude|CRW_SST&.colorBar=|||10|22|`);
-            updateMap('sst-anom', `https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW.png?CRW_SSTANOMALY[(last)]${coords}&.vars=longitude|latitude|CRW_SSTANOMALY&.colorBar=BlueWhiteRed|||-2|2|`);
-            updateMap('wind', `https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdQCwindproducts1day.png?wind_speed[(last)][(10.0)]${coords}`);
-            updateMap('ssh', `https://coastwatch.noaa.gov/erddap/griddap/noaacweddymesiplusdaily.png?ssh[(last)]${coords}&.vars=longitude|latitude|ssh&.colorBar=|||-0.5|0.5|`);
+            ['chla-d', 'chla-w', 'sst', 'sst-anom', 'wind', 'ssh'].forEach(id => {
+                const img = document.getElementById(id);
+                img.style.display = 'none';
+                img.parentElement.querySelector('.placeholder').style.display = 'block';
+                img.src = getMapUrl(id, globalCoords);
+                img.onload = () => {
+                    img.style.display = 'block';
+                    img.parentElement.querySelector('.placeholder').style.display = 'none';
+                };
+            });
 
-        } catch (e) {
-            info.innerHTML = `Vessel: <b>${currentShipName}</b><br><small>(Error processing coordinates)</small>`;
-        }
+        } catch (e) { console.error(e); }
     }
 
     function loadShipMap() {
@@ -112,11 +162,14 @@
         const shipId = selector.value;
         currentShipName = selector.options[selector.selectedIndex].text.replace(/\s*\(.*?\)\s*/g, "").trim();
 
+        const img = document.getElementById('track-map');
+        img.style.display = 'none';
+        img.parentElement.querySelector('.placeholder').style.display = 'block';
+        
         const date = new Date();
         date.setDate(date.getDate() - 10);
-        const trackUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.png?longitude%2Clatitude%2Ctime&time%3E=${date.toISOString().split("T")[0]}&.draw=markers&.marker=10%7C5&.color=0x000000&.colorBar=%7C%7C%7C%7C%7C&.bgColor=0xffccccff`;
-        
-        updateMap('track-map', trackUrl);
+        img.src = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.png?longitude%2Clatitude%2Ctime&time%3E=${date.toISOString().split("T")[0]}&.draw=markers&.marker=10%7C5&.color=0x000000&.colorBar=%7C%7C%7C%7C%7C&.bgColor=0xffccccff`;
+        img.onload = () => { img.style.display = 'block'; img.parentElement.querySelector('.placeholder').style.display = 'none'; };
 
         const oldScript = document.getElementById("jsonp-script");
         if (oldScript) oldScript.remove();
