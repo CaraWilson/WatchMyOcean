@@ -20,12 +20,12 @@
     <h2>Vessel History (Last 10 Days)</h2>
     
     <select id="vessel-selector" onchange="loadShipMap()">
-        <option value="fsuNoaaShipWTEPnrt">Oscar Dyson</option>
-        <option value="fsuNoaaShipWTEDnrt">Bell M. Shimada</option>
-        <option value="fsuNoaaShipWTEFnrt">Rainier</option>
-        <option value="fsuNoaaShipWTEEnrt">Elton Sette</option>
-        <option value="fsuNoaaShipWTERnrt">Nancy Foster</option>
-        <option value="fsuNoaaShipWTDLnrt">Pisces</option>
+        <option value="fsuNoaaShipWTEPnrt">Oscar Dyson (Gulf of Alaska)</option>
+        <option value="fsuNoaaShipWTEDnrt">Bell M. Shimada (West Coast)</option>
+        <option value="fsuNoaaShipWTEFnrt">Rainier (West Coast)</option>
+        <option value="fsuNoaaShipWTEEnrt">Elton Sette (Hawaii)</option>
+        <option value="fsuNoaaShipWTERnrt">Nancy Foster (Atlantic)</option>
+        <option value="fsuNoaaShipWTDLnrt">Pisces (Gulf of Mexico)</option>
     </select>
 
     <div class="map-box">
@@ -40,7 +40,11 @@
     async function loadShipMap() {
         const selector = document.getElementById('vessel-selector');
         const shipId = selector.value;
-        const shipName = selector.options[selector.selectedIndex].text;
+        
+        // This line gets the text, then uses a "Regular Expression" 
+        // to remove anything inside parentheses for the bottom label.
+        const fullText = selector.options[selector.selectedIndex].text;
+        const shipName = fullText.replace(/\s*\(.*?\)\s*/g, '').trim();
         
         const mapImg = document.getElementById('dynamic-map');
         const placeholder = document.getElementById('placeholder-text');
@@ -48,7 +52,7 @@
 
         if (!shipId) return;
 
-        // 1. SET THE MAP IMMEDIATELY (Reliable, no CORS needed)
+        // 1. SET THE MAP IMMEDIATELY
         const date = new Date();
         date.setDate(date.getDate() - 10);
         const dateString = date.toISOString().split('T')[0];
@@ -64,7 +68,7 @@
             mapImg.style.display = 'block';
         };
 
-        // 2. FETCH CSV DATA FOR TEXT (Requires CORS Bridge)
+        // 2. FETCH COORDINATE DATA
         debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>Fetching coordinates...</small>`;
         
         const targetCsvUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.csv?time,latitude,longitude&orderByMax("time")`;
@@ -73,14 +77,8 @@
         try {
             const response = await fetch(proxyUrl);
             const wrapper = await response.json();
-            
-            // AllOrigins returns the CSV as a single string inside 'contents'
             const csvData = wrapper.contents; 
             
-            // ERDDAP CSV format: 
-            // Line 0: headers
-            // Line 1: units
-            // Line 2: the actual data we want
             const lines = csvData.split('\n');
             const dataRow = lines[2].split(',');
 
@@ -94,7 +92,7 @@
 
         } catch (err) {
             console.error("CSV Fetch failed:", err);
-            debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>(Coordinates currently blocked by browser security)</small>`;
+            debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>(Coordinates temporarily unavailable)</small>`;
         }
     }
 
