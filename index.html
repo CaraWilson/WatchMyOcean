@@ -34,11 +34,13 @@
     
     .card h3 { margin: 10px 0; color: #34495e; font-size: 1.1em; }
     
-    /* Scale Inputs inside cards */
+    /* Updated Color Bar Widget with Set Button */
     .cb-widget { display: flex; gap: 5px; align-items: center; justify-content: center; background: #f9f9f9; padding: 5px; border-radius: 4px; margin: 10px 0; border: 1px solid #eee; }
     .cb-widget label { font-size: 0.7em; font-weight: bold; color: #7f8c8d; }
-    .cb-widget input { width: 50px; padding: 3px; border: 1px solid #ddd; border-radius: 3px; text-align: center; }
-    
+    .cb-widget input { width: 45px; padding: 3px; border: 1px solid #ddd; border-radius: 3px; text-align: center; font-size: 0.8em; }
+    .set-btn { background: #34495e; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.7em; font-weight: bold; }
+    .set-btn:hover { background: #1a252f; }
+
     .card a { color: #3498db; text-decoration: none; font-weight: bold; font-size: 0.9em; margin-top: auto; }
   </style>
 </head>
@@ -64,16 +66,16 @@
 </div>
 
 <div class="data-grid" id="grid">
-  <div class="card"><h3>Daily Chlorophyll</h3><div class="map-wrap"><img id="img-chla-d"><canvas id="cvs-chla-d" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-chla-d" value="0.03"><label>Max</label><input id="max-chla-d" value="5"></div><a id="lnk-chla-d" target="_blank">ERDDAP</a></div>
-  <div class="card"><h3>Weekly Chlorophyll</h3><div class="map-wrap"><img id="img-chla-w"><canvas id="cvs-chla-w" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-chla-w" value="0.03"><label>Max</label><input id="max-chla-w" value="5"></div><a id="lnk-chla-w" target="_blank">ERDDAP</a></div>
-  <div class="card"><h3>SST</h3><div class="map-wrap"><img id="img-sst"><canvas id="cvs-sst" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-sst" value="10"><label>Max</label><input id="max-sst" value="22"></div><a id="lnk-sst" target="_blank">ERDDAP</a></div>
-  <div class="card"><h3>SST Anomaly</h3><div class="map-wrap"><img id="img-sst-anom"><canvas id="cvs-sst-anom" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-sst-anom" value="-2"><label>Max</label><input id="max-sst-anom" value="2"></div><a id="lnk-sst-anom" target="_blank">ERDDAP</a></div>
+  <div class="card"><h3>Daily Chlorophyll</h3><div class="map-wrap"><img id="img-chla-d"><canvas id="cvs-chla-d" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-chla-d" value="0.03"><label>Max</label><input id="max-chla-d" value="5"><button class="set-btn" onclick="updateSingleMap('chla-d')">Set</button></div><a id="lnk-chla-d" target="_blank">ERDDAP</a></div>
+  <div class="card"><h3>Weekly Chlorophyll</h3><div class="map-wrap"><img id="img-chla-w"><canvas id="cvs-chla-w" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-chla-w" value="0.03"><label>Max</label><input id="max-chla-w" value="5"><button class="set-btn" onclick="updateSingleMap('chla-w')">Set</button></div><a id="lnk-chla-w" target="_blank">ERDDAP</a></div>
+  <div class="card"><h3>SST</h3><div class="map-wrap"><img id="img-sst"><canvas id="cvs-sst" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-sst" value="10"><label>Max</label><input id="max-sst" value="22"><button class="set-btn" onclick="updateSingleMap('sst')">Set</button></div><a id="lnk-sst" target="_blank">ERDDAP</a></div>
+  <div class="card"><h3>SST Anomaly</h3><div class="map-wrap"><img id="img-sst-anom"><canvas id="cvs-sst-anom" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-sst-anom" value="-2"><label>Max</label><input id="max-sst-anom" value="2"><button class="set-btn" onclick="updateSingleMap('sst-anom')">Set</button></div><a id="lnk-sst-anom" target="_blank">ERDDAP</a></div>
   <div class="card"><h3>Sardine Habitat</h3><div class="map-wrap"><img id="img-sardine"><canvas id="cvs-sardine" class="station-canvas"></canvas></div><div class="cb-widget" style="visibility:hidden">spacer</div><a id="lnk-sardine" target="_blank">ERDDAP</a></div>
-  <div class="card"><h3>C-HARMS (PN)</h3><div class="map-wrap"><img id="img-charms-pn"><canvas id="cvs-charms-pn" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-charms-pn" value="0"><label>Max</label><input id="max-charms-pn" value="100"></div><a id="lnk-charms-pn" target="_blank">ERDDAP</a></div>
-  <div class="card"><h3>Salinity (WCOFS)</h3><div class="map-wrap"><img id="img-charms-salt"><canvas id="cvs-charms-salt" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-charms-salt" value="31"><label>Max</label><input id="max-charms-salt" value="35"></div><a id="lnk-charms-salt" target="_blank">ERDDAP</a></div>
-  <div class="card"><h3>Wind Speed</h3><div class="map-wrap"><img id="img-wind"><canvas id="cvs-wind" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-wind" value="0"><label>Max</label><input id="max-wind" value="15"></div><a id="lnk-wind" target="_blank">ERDDAP</a></div>
-  <div class="card"><h3>SSH</h3><div class="map-wrap"><img id="img-ssh"><canvas id="cvs-ssh" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-ssh" value="-0.5"><label>Max</label><input id="max-ssh" value="0.5"></div><a id="lnk-ssh" target="_blank">ERDDAP</a></div>
-  <div class="card"><h3>Salinity (SMOS)</h3><div class="map-wrap"><img id="img-sss"><canvas id="cvs-sss" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-sss" value="31"><label>Max</label><input id="max-sss" value="35"></div><a id="lnk-sss" target="_blank">ERDDAP</a></div>
+  <div class="card"><h3>C-HARMS (PN)</h3><div class="map-wrap"><img id="img-charms-pn"><canvas id="cvs-charms-pn" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-charms-pn" value="0"><label>Max</label><input id="max-charms-pn" value="100"><button class="set-btn" onclick="updateSingleMap('charms-pn')">Set</button></div><a id="lnk-charms-pn" target="_blank">ERDDAP</a></div>
+  <div class="card"><h3>Salinity (WCOFS)</h3><div class="map-wrap"><img id="img-charms-salt"><canvas id="cvs-charms-salt" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-charms-salt" value="31"><label>Max</label><input id="max-charms-salt" value="35"><button class="set-btn" onclick="updateSingleMap('charms-salt')">Set</button></div><a id="lnk-charms-salt" target="_blank">ERDDAP</a></div>
+  <div class="card"><h3>Wind Speed</h3><div class="map-wrap"><img id="img-wind"><canvas id="cvs-wind" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-wind" value="0"><label>Max</label><input id="max-wind" value="15"><button class="set-btn" onclick="updateSingleMap('wind')">Set</button></div><a id="lnk-wind" target="_blank">ERDDAP</a></div>
+  <div class="card"><h3>SSH</h3><div class="map-wrap"><img id="img-ssh"><canvas id="cvs-ssh" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-ssh" value="-0.5"><label>Max</label><input id="max-ssh" value="0.5"><button class="set-btn" onclick="updateSingleMap('ssh')">Set</button></div><a id="lnk-ssh" target="_blank">ERDDAP</a></div>
+  <div class="card"><h3>Salinity (SMOS)</h3><div class="map-wrap"><img id="img-sss"><canvas id="cvs-sss" class="station-canvas"></canvas></div><div class="cb-widget"><label>Min</label><input id="min-sss" value="31"><label>Max</label><input id="max-sss" value="35"><button class="set-btn" onclick="updateSingleMap('sss')">Set</button></div><a id="lnk-sss" target="_blank">ERDDAP</a></div>
 </div>
 
 <script>
@@ -90,6 +92,19 @@
     { lon: -119.66333, lat: 33.32 }, { lon: -120.00667, lat: 33.156666 }, { lon: -120.348335, lat: 32.99 },
     { lon: -121.03167, lat: 32.656666 }
   ];
+
+  const CONFIG = {
+    "chla-d": ["https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily", "?chlor_a[(last)][(0.0)]", "Rainbow2", false],
+    "chla-w": ["https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaWeekly", "?chlor_a[(last)][(0.0)]", "Rainbow2", false],
+    "sst": ["https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW", "?CRW_SST[(last)]", "", false],
+    "sst-anom": ["https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW", "?CRW_SSTANOMALY[(last)]", "BlueWhiteRed", false],
+    "sardine": ["https://coastwatch.pfeg.noaa.gov/erddap/griddap/sardine_habitat_viirs_v2", "?potential_habitat_classification[(last)]", "", false],
+    "charms-pn": ["https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180", "?pseudo_nitzschia[(last)]", "", true],
+    "charms-salt": ["https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180", "?salinity[(last)]", "", true],
+    "wind": ["https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdQCwindproducts1day", "?wind_speed[(last)][(10.0)]", "", false],
+    "ssh": ["https://coastwatch.noaa.gov/erddap/griddap/noaacweddymesiplusdaily", "?ssh[(last)]", "", false],
+    "sss": ["https://coastwatch.pfeg.noaa.gov/erddap/griddap/coastwatchSMOSv662SSS3day", "?sss[(last)][(0.0)]", "", false]
+  };
 
   function getPlotBox(canvas, id) {
     const W = canvas.width, H = canvas.height;
@@ -120,23 +135,49 @@
     canvas.width = img.clientWidth; canvas.height = img.clientHeight;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     const isDefault = (sLat === 29 && nLat === 39 && wLon === -127 && eLon === -116);
     document.getElementById('station-note').style.display = isDefault ? 'none' : 'block';
     if (!isDefault) return;
-
     const id = canvasId.replace("cvs-", ""), box = getPlotBox(canvas, id), geo = getGeoBounds(id, sLat, nLat, wLon, eLon);
     ctx.save(); ctx.beginPath(); ctx.rect(box.left, box.top, box.width, box.height); ctx.clip();
-
     for (const p of STATIONS) {
       if (p.lat < geo.sLat || p.lat > geo.nLat || p.lon < geo.wLon || p.lon > geo.eLon) continue;
       const x = box.left + ((p.lon - geo.wLon) / (geo.eLon - geo.wLon)) * box.width;
       const y = box.top + ((geo.nLat - p.lat) / (geo.nLat - geo.sLat)) * box.height;
-      ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(0,0,0,0.9)"; ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fillStyle = "rgba(0,0,0,0.9)"; ctx.fill();
       ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(255,255,255,0.9)"; ctx.stroke();
     }
     ctx.restore();
+  }
+
+  function updateSingleMap(id) {
+    const sLat = Number(document.getElementById("latMin").value);
+    const nLat = Number(document.getElementById("latMax").value);
+    const wLon = Number(document.getElementById("lonMin").value);
+    const eLon = Number(document.getElementById("lonMax").value);
+    
+    const coords = `[(${sLat}):(${nLat})][(${wLon}):(${eLon})]`;
+    const cCoords = `[(${Math.max(31.3, sLat)}):(${Math.min(43, nLat)})][(${Math.max(-127.5, wLon)}):(${Math.min(-117, eLon)})]`;
+    
+    const item = CONFIG[id];
+    const baseUrl = item[0], prefix = item[1], palette = item[2], isCharms = isCharms = item[3];
+    
+    const minInput = document.getElementById("min-" + id);
+    const maxInput = document.getElementById("max-" + id);
+    let scale = "";
+    if (minInput && maxInput) scale = `&.colorBar=${palette}|||${minInput.value}|${maxInput.value}|`;
+    
+    const finalCoords = isCharms ? cCoords : coords;
+    const q = prefix + finalCoords + scale;
+    
+    const img = document.getElementById("img-" + id);
+    img.onload = () => drawStations("cvs-" + id, "img-" + id, sLat, nLat, wLon, eLon);
+    img.src = baseUrl + ".png" + q;
+    document.getElementById("lnk-" + id).href = baseUrl + ".graph" + q;
+  }
+
+  function updateAllMaps() {
+    Object.keys(CONFIG).forEach(id => updateSingleMap(id));
   }
 
   function resetDefaults() {
@@ -144,57 +185,7 @@
     document.getElementById("latMax").value = 39;
     document.getElementById("lonMin").value = -127;
     document.getElementById("lonMax").value = -116;
-    
-    // Also reset common color scales
-    const scales = {
-        'chla-d': [0.03, 5], 'chla-w': [0.03, 5], 'sst': [10, 22], 'sst-anom': [-2, 2]
-    };
-    for (let id in scales) {
-        if(document.getElementById(`min-${id}`)) {
-            document.getElementById(`min-${id}`).value = scales[id][0];
-            document.getElementById(`max-${id}`).value = scales[id][1];
-        }
-    }
     updateAllMaps();
-  }
-
-  function updateAllMaps() {
-    const sLat = Number(document.getElementById("latMin").value);
-    const nLat = Number(document.getElementById("latMax").value);
-    const wLon = Number(document.getElementById("lonMin").value);
-    const eLon = Number(document.getElementById("lonMax").value);
-    const coords = `[(${sLat}):(${nLat})][(${wLon}):(${eLon})]`;
-    const cCoords = `[(${Math.max(31.3, sLat)}):(${Math.min(43, nLat)})][(${Math.max(-127.5, wLon)}):(${Math.min(-117, eLon)})]`;
-
-    function setContent(id, baseUrl, queryPrefix, palette = "", isCharms = false) {
-      const img = document.getElementById("img-" + id);
-      const minInput = document.getElementById("min-" + id);
-      const maxInput = document.getElementById("max-" + id);
-      
-      // BUILD THE SCALE STRING DYNAMICALLY
-      let scaleParam = "";
-      if (minInput && maxInput) {
-        scaleParam = `&.colorBar=${palette}|||${minInput.value}|${maxInput.value}|`;
-      }
-
-      const finalCoords = isCharms ? cCoords : coords;
-      const fullQuery = queryPrefix + finalCoords + scaleParam;
-      
-      img.onload = () => drawStations("cvs-" + id, "img-" + id, sLat, nLat, wLon, eLon);
-      img.src = baseUrl + ".png" + fullQuery;
-      document.getElementById("lnk-" + id).href = baseUrl + ".graph" + fullQuery;
-    }
-
-    setContent("chla-d", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily", "?chlor_a[(last)][(0.0)]", "Rainbow2");
-    setContent("chla-w", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaWeekly", "?chlor_a[(last)][(0.0)]", "Rainbow2");
-    setContent("sst", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW", "?CRW_SST[(last)]", "");
-    setContent("sst-anom", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW", "?CRW_SSTANOMALY[(last)]", "BlueWhiteRed");
-    setContent("sardine", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/sardine_habitat_viirs_v2", "?potential_habitat_classification[(last)]");
-    setContent("charms-pn", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180", "?pseudo_nitzschia[(last)]", "", true);
-    setContent("charms-salt", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180", "?salinity[(last)]", "", true);
-    setContent("wind", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdQCwindproducts1day", "?wind_speed[(last)][(10.0)]", "");
-    setContent("ssh", "https://coastwatch.noaa.gov/erddap/griddap/noaacweddymesiplusdaily", "?ssh[(last)]", "");
-    setContent("sss", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/coastwatchSMOSv662SSS3day", "?sss[(last)][(0.0)]", "");
   }
 
   window.onload = updateAllMaps;
