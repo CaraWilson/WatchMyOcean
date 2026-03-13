@@ -14,7 +14,7 @@
         .info { margin-top: 15px; color: #333; text-align: center; line-height: 1.6; font-size: 1.1rem; word-wrap: break-word; }
         .coords-text { font-weight: bold; color: #003366; }
         .placeholder { color: #666; padding: 20px; text-align: center; }
-        .url-debug { font-size: 0.8rem; color: #d35400; margin-top: 10px; display: block; border-top: 1px dashed #ccc; padding-top: 10px; }
+        .url-debug { font-size: 0.8rem; color: #777; margin-top: 10px; display: block; border-top: 1px dashed #ccc; padding-top: 10px; }
     </style>
 </head>
 <body>
@@ -36,7 +36,7 @@
             <img id="dynamic-map" src="" style="display:none;">
         </div>
         <div class="map-box">
-            <h3>Chlorophyll-a (Weekly 5°x5° Box)</h3>
+            <h3>Weekly Chlorophyll (5°x5° Box)</h3>
             <div id="chlor-placeholder" class="placeholder">Waiting for coordinates...</div>
             <img id="chlor-map" src="" style="display:none;">
         </div>
@@ -69,31 +69,33 @@
                 timeZoneName: 'short'
             });
 
-            // Calculate Bounding Box
-            const minLat = (lat - 2.5).toFixed(2);
-            const maxLat = (lat + 2.5).toFixed(2);
-            const minLon = (lonForMap - 2.5).toFixed(2);
-            const maxLon = (lonForMap + 2.5).toFixed(2);
+            // 1. Calculate the 5x5 degree box
+            const sLat = (lat - 2.5).toFixed(2);
+            const nLat = (lat + 2.5).toFixed(2);
+            const wLon = (lonForMap - 2.5).toFixed(2);
+            const eLon = (lonForMap + 2.5).toFixed(2);
 
-            // Construct the URL
-            const chlorUrl = `https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaWeekly.png?chlor_a%5B(latest)%5D%5B(0.0)%5D%5B(${maxLat}):(${minLat})%5D%5B(${minLon}):(${maxLon})%5D&.draw=surface&.vars=longitude%7Clatitude%7Cchlor_a&.colorBar=Rainbow2%7C%7C%7C.03%7C5%7C&.bgColor=0xffccccff`;
+            // 2. Format the coordinate string as used in your previous setContent call
+            const gridCoords = `[(${nLat}):(${sLat})][(${wLon}):(${eLon})]`;
+
+            // 3. Construct URL using your working pattern
+            const baseUrl = 'https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaWeekly';
+            const chlorUrl = baseUrl + `.png?chlor_a[(last)][(0.0)]${gridCoords}&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||.03|5|`;
             
             // UI Update
             info.innerHTML =
                 `Vessel: <b>${currentShipName}</b><br>` +
                 `Latest Position: <span class="coords-text">${lat.toFixed(2)}, ${lon.toFixed(2)} (${lonForMap.toFixed(2)})</span> ` +
                 `Observed: ${timeWithZone}` +
-                `<div class="url-debug"><b>Diagnostic Chl URL:</b> <a href="${chlorUrl}" target="_blank">${chlorUrl}</a></div>`;
+                `<div class="url-debug">Chl URL: <a href="${chlorUrl}" target="_blank">View Raw Map</a></div>`;
 
-            chlorPlaceholder.innerText = "Requesting Chlorophyll data...";
             chlorImg.src = chlorUrl;
-            
             chlorImg.onload = () => {
                 chlorPlaceholder.style.display = "none";
                 chlorImg.style.display = "block";
             };
             chlorImg.onerror = () => {
-                chlorPlaceholder.innerText = "Chlorophyll map failed to load. Click the diagnostic link below to see the error.";
+                chlorPlaceholder.innerText = "No satellite data for this area/time.";
             };
 
         } catch (e) {
@@ -111,16 +113,14 @@
         const trackPlaceholder = document.getElementById("track-placeholder");
         const chlorImg = document.getElementById("chlor-map");
         const chlorPlaceholder = document.getElementById("chlor-placeholder");
-        const info = document.getElementById("ship-info");
 
         if (!shipId) return;
 
-        info.innerHTML = `Vessel: <b>${shipName}</b><br><small>Fetching current status...</small>`;
         trackPlaceholder.style.display = "block";
         mapImg.style.display = "none";
         chlorImg.style.display = "none";
         chlorPlaceholder.style.display = "block";
-        chlorPlaceholder.innerText = "Calculating bounding box...";
+        chlorPlaceholder.innerText = "Calculating satellite box...";
 
         const date = new Date();
         date.setDate(date.getDate() - 10);
