@@ -6,17 +6,10 @@
     <style>
         body { font-family: sans-serif; padding: 30px; background-color: #f4f4f9; }
         .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        select { width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 10px; cursor: pointer; }
-        
-        .button-container { text-align: center; margin-bottom: 20px; }
-        .data-btn { 
-            background-color: #003366; color: white; border: none; padding: 10px 20px; 
-            border-radius: 6px; cursor: pointer; font-size: 0.9rem; text-decoration: none; display: inline-block;
-        }
-
+        select { width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 20px; cursor: pointer; }
         .map-box { width: 100%; min-height: 500px; border: 2px solid #eee; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
         img { max-width: 100%; height: auto; display: block; border-radius: 4px; }
-        .info { margin-top: 15px; color: #333; text-align: center; line-height: 1.6; font-size: 1.1rem; min-height: 60px; }
+        .info { margin-top: 15px; color: #333; text-align: center; line-height: 1.6; font-size: 1.1rem; }
         .coords-text { font-weight: bold; color: #003366; }
     </style>
 </head>
@@ -34,12 +27,8 @@
         <option value="fsuNoaaShipWTDLnrt">Pisces</option>
     </select>
 
-    <div class="button-container">
-        <a id="data-link" href="#" target="_blank" class="data-btn">Open Raw Data Table</a>
-    </div>
-
     <div class="map-box">
-        <div id="placeholder-text">Loading map...</div>
+        <div id="placeholder-text">Loading map and data...</div>
         <img id="dynamic-map" src="" style="display:none;">
     </div>
     
@@ -47,30 +36,7 @@
 </div>
 
 <script>
-    // Global callback for JSONP
-    window.handleErddapData = function(data) {
-        const debug = document.getElementById('debug-info');
-        const selector = document.getElementById('vessel-selector');
-        const shipName = selector.options[selector.selectedIndex].text;
-
-        try {
-            // ERDDAP JSONP returns an object with a table.rows array
-            const row = data.table.rows[0];
-            const timeVal = row[0];
-            const latVal = typeof row[1] === 'number' ? row[1].toFixed(4) : row[1];
-            const lonVal = typeof row[2] === 'number' ? row[2].toFixed(4) : row[2];
-            const timestamp = new Date(timeVal).toLocaleString();
-
-            debug.innerHTML = `Vessel: <b>${shipName}</b><br>` +
-                             `Latest Position: <span class="coords-text">${latVal}, ${lonVal}</span><br>` +
-                             `<small>Observed: ${timestamp}</small>`;
-        } catch (err) {
-            console.error("JSONP Parsing Error:", err);
-            debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>(Detailed coordinates unavailable via script)</small>`;
-        }
-    };
-
-    function loadShipMap() {
+    async function loadShipMap() {
         const selector = document.getElementById('vessel-selector');
         const shipId = selector.value;
         const shipName = selector.options[selector.selectedIndex].text;
@@ -78,38 +44,41 @@
         const mapImg = document.getElementById('dynamic-map');
         const placeholder = document.getElementById('placeholder-text');
         const debug = document.getElementById('debug-info');
-        const dataLink = document.getElementById('data-link');
 
         if (!shipId) return;
 
-        // Immediately update text so it's not blank
-        debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>Loading latest coordinates...</small>`;
+        // Reset UI
+        debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>Updating coordinates...</small>`;
+        mapImg.style.display = 'none';
+        placeholder.style.display = 'block';
 
-        // Update the 'View Raw' link
-        dataLink.href = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.htmlTable?time%2Clatitude%2Clongitude&orderByMax(%22time%22)`;
-
-        // Update the Map Image
+        // 1. Update the Map (Standard Image Load - Usually works fine)
         const date = new Date();
         date.setDate(date.getDate() - 10);
         const dateString = date.toISOString().split('T')[0];
         mapImg.src = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.png?longitude%2Clatitude%2Ctime&time%3E=${dateString}&.draw=markers&.marker=10%7C5&.color=0x000000&.colorBar=%7C%7C%7C%7C%7C&.bgColor=0xffccccff`;
 
-        // JSONP Request for Coordinates
-        const jsonpUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.jsonp?time,latitude,longitude&orderByMax("time")&.jsonp=handleErddapData`;
-        
-        const oldScript = document.getElementById('erddap-script');
-        if (oldScript) oldScript.remove();
+        // 2. Fetch the actual Latitude and Longitude using a CORS bridge
+        const targetUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.json?time,latitude,longitude&orderByMax("time")`;
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
 
-        const script = document.createElement('script');
-        script.id = 'erddap-script';
-        script.src = jsonpUrl;
-        
-        // Error handling for the script tag itself
-        script.onerror = function() {
-            debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>(Error connecting to coordinate server)</small>`;
-        };
+        try {
+            const response = await fetch(proxyUrl);
+            const wrapper = await response.json();
+            const data = JSON.parse(wrapper.contents); // AllOrigins returns data inside 'contents'
 
-        document.body.appendChild(script);
+            const row = data.table.rows[0];
+            const lat = row[1].toFixed(4);
+            const lon = row[2].toFixed(4);
+            const time = new Date(row[0]).toLocaleString();
+
+            debug.innerHTML = `Vessel: <b>${shipName}</b><br>` +
+                             `Latest Position: <span class="coords-text">${lat}, ${lon}</span><br>` +
+                             `<small>Observed: ${time}</small>`;
+        } catch (err) {
+            console.error("Fetch Error:", err);
+            debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>Coordinates unavailable (Security block/Server busy)</small>`;
+        }
 
         mapImg.onload = () => {
             placeholder.style.display = 'none';
@@ -117,6 +86,7 @@
         };
     }
 
+    // Initialize on load
     window.onload = loadShipMap;
 </script>
 
