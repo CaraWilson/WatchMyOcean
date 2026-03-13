@@ -34,7 +34,7 @@
     
     .card h3 { margin: 10px 0; color: #34495e; font-size: 1.1em; }
     
-    /* Individual Scale Widget */
+    /* Scale Inputs inside cards */
     .cb-widget { display: flex; gap: 5px; align-items: center; justify-content: center; background: #f9f9f9; padding: 5px; border-radius: 4px; margin: 10px 0; border: 1px solid #eee; }
     .cb-widget label { font-size: 0.7em; font-weight: bold; color: #7f8c8d; }
     .cb-widget input { width: 50px; padding: 3px; border: 1px solid #ddd; border-radius: 3px; text-align: center; }
@@ -144,6 +144,17 @@
     document.getElementById("latMax").value = 39;
     document.getElementById("lonMin").value = -127;
     document.getElementById("lonMax").value = -116;
+    
+    // Also reset common color scales
+    const scales = {
+        'chla-d': [0.03, 5], 'chla-w': [0.03, 5], 'sst': [10, 22], 'sst-anom': [-2, 2]
+    };
+    for (let id in scales) {
+        if(document.getElementById(`min-${id}`)) {
+            document.getElementById(`min-${id}`).value = scales[id][0];
+            document.getElementById(`max-${id}`).value = scales[id][1];
+        }
+    }
     updateAllMaps();
   }
 
@@ -155,34 +166,35 @@
     const coords = `[(${sLat}):(${nLat})][(${wLon}):(${eLon})]`;
     const cCoords = `[(${Math.max(31.3, sLat)}):(${Math.min(43, nLat)})][(${Math.max(-127.5, wLon)}):(${Math.min(-117, eLon)})]`;
 
-    function setContent(id, baseUrl, queryPrefix, extraParams = "", isCharms = false) {
+    function setContent(id, baseUrl, queryPrefix, palette = "", isCharms = false) {
       const img = document.getElementById("img-" + id);
       const minInput = document.getElementById("min-" + id);
       const maxInput = document.getElementById("max-" + id);
       
+      // BUILD THE SCALE STRING DYNAMICALLY
       let scaleParam = "";
       if (minInput && maxInput) {
-        scaleParam = `|||${minInput.value}|${maxInput.value}|`;
+        scaleParam = `&.colorBar=${palette}|||${minInput.value}|${maxInput.value}|`;
       }
 
       const finalCoords = isCharms ? cCoords : coords;
-      const fullQuery = queryPrefix + finalCoords + extraParams + scaleParam;
+      const fullQuery = queryPrefix + finalCoords + scaleParam;
       
       img.onload = () => drawStations("cvs-" + id, "img-" + id, sLat, nLat, wLon, eLon);
       img.src = baseUrl + ".png" + fullQuery;
       document.getElementById("lnk-" + id).href = baseUrl + ".graph" + fullQuery;
     }
 
-    setContent("chla-d", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily", "?chlor_a[(last)][(0.0)]", "&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2");
-    setContent("chla-w", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaWeekly", "?chlor_a[(last)][(0.0)]", "&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2");
-    setContent("sst", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW", "?CRW_SST[(last)]", "&.vars=longitude|latitude|CRW_SST&.colorBar=");
-    setContent("sst-anom", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW", "?CRW_SSTANOMALY[(last)]", "&.vars=longitude|latitude|CRW_SSTANOMALY&.colorBar=BlueWhiteRed");
+    setContent("chla-d", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily", "?chlor_a[(last)][(0.0)]", "Rainbow2");
+    setContent("chla-w", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaWeekly", "?chlor_a[(last)][(0.0)]", "Rainbow2");
+    setContent("sst", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW", "?CRW_SST[(last)]", "");
+    setContent("sst-anom", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW", "?CRW_SSTANOMALY[(last)]", "BlueWhiteRed");
     setContent("sardine", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/sardine_habitat_viirs_v2", "?potential_habitat_classification[(last)]");
-    setContent("charms-pn", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180", "?pseudo_nitzschia[(last)]", "&.colorBar=", true);
-    setContent("charms-salt", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180", "?salinity[(last)]", "&.colorBar=", true);
-    setContent("wind", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdQCwindproducts1day", "?wind_speed[(last)][(10.0)]", "&.colorBar=");
-    setContent("ssh", "https://coastwatch.noaa.gov/erddap/griddap/noaacweddymesiplusdaily", "?ssh[(last)]", "&.vars=longitude|latitude|ssh&.colorBar=");
-    setContent("sss", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/coastwatchSMOSv662SSS3day", "?sss[(last)][(0.0)]", "&.colorBar=");
+    setContent("charms-pn", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180", "?pseudo_nitzschia[(last)]", "", true);
+    setContent("charms-salt", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180", "?salinity[(last)]", "", true);
+    setContent("wind", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdQCwindproducts1day", "?wind_speed[(last)][(10.0)]", "");
+    setContent("ssh", "https://coastwatch.noaa.gov/erddap/griddap/noaacweddymesiplusdaily", "?ssh[(last)]", "");
+    setContent("sss", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/coastwatchSMOSv662SSS3day", "?sss[(last)][(0.0)]", "");
   }
 
   window.onload = updateAllMaps;
