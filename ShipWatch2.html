@@ -2,28 +2,59 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NOAA Fleet Dashboard - Dynamic History</title>
+    <title>NOAA Fleet Dashboard - Uniform Grid</title>
     <style>
         body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; margin: 0; }
         .container { max-width: 1400px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         select { width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 8px; border: 2px solid #003366; margin-bottom: 20px; cursor: pointer; }
         
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 15px; }
-        .card { background: #fafafa; border: 1px solid #ddd; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 400px; }
+        /* Dashboard Layout - Uniform 3-column grid */
+        .dashboard-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 15px; 
+        }
+        
+        .card { 
+            background: #fafafa; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            padding: 10px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            /* Fixed min-height ensures vertical alignment across rows */
+            min-height: 420px; 
+            box-sizing: border-box;
+        }
+        
         .card h3 { margin: 5px 0; font-size: 0.85rem; color: #003366; text-transform: uppercase; }
         
+        /* Ensures all images scale the same way within the cards */
+        .img-container {
+            width: 100%;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
         img { max-width: 100%; height: auto; border-radius: 4px; display: none; margin-bottom: 10px; }
-        .placeholder { color: #888; font-size: 0.8rem; text-align: center; margin-top: 50px; }
+        .placeholder { color: #888; font-size: 0.8rem; text-align: center; }
         
-        /* Warning Badge */
         #status-alert { display: none; background: #e74c3c; color: white; padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; margin-bottom: 15px; }
 
-        .cb-widget { display: flex; gap: 5px; align-items: center; justify-content: center; background: #eee; width: 100%; padding: 5px; border-radius: 4px; font-size: 0.75rem; margin-top: auto; }
+        .cb-widget { display: flex; gap: 5px; align-items: center; justify-content: center; background: #eee; width: 100%; padding: 5px; border-radius: 4px; font-size: 0.75rem; margin-top: 10px; }
         .cb-widget input { width: 45px; text-align: center; border: 1px solid #ccc; }
         .set-btn { background: #003366; color: white; border: none; padding: 3px 7px; border-radius: 3px; cursor: pointer; }
 
         .info { margin-top: 20px; text-align: center; line-height: 1.6; font-size: 1rem; border-top: 2px solid #eee; padding-top: 15px; }
         .coords-text { font-weight: bold; color: #003366; }
+
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 1100px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 700px) { .dashboard-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -41,27 +72,33 @@
         <option value="fsuNoaaShipWTEEnrt">Elton Sette (Hawaii)</option>
         <option value="fsuNoaaShipWTERnrt">Nancy Foster (Atlantic)</option>
         <option value="fsuNoaaShipWTEPnrt">Oscar Dyson (Alaska)</option>
-        <option value="fsuNoaaShipWTDLnrt">Pisces (Atlantic)</option>
+        <option value="fsuNoaaShipWTDLnrt">Pisces (Atlantic)</option> 
     </select>
 
     <div class="dashboard-grid">
-        <div class="card" id="box-track"><h3>Last 10 Days Activity</h3><div class="placeholder">Loading...</div><img id="track-map"></div>
-        <div class="card" id="box-chla-d"><h3>Chl (Daily)</h3><div class="placeholder">Waiting...</div><img id="chla-d">
+        <div class="card"><h3>Last 10 Days Activity</h3><div class="img-container"><div class="placeholder">Loading...</div><img id="track-map"></div></div>
+        
+        <div class="card"><h3>Chl (Daily)</h3><div class="img-container"><div class="placeholder">Waiting...</div><img id="chla-d"></div>
             <div class="cb-widget">Min: <input id="min-chla-d" value="0.03"> Max: <input id="max-chla-d" value="5"><button class="set-btn" onclick="updateMap('chla-d')">Set</button></div>
         </div>
-        <div class="card" id="box-chla-w"><h3>Chl (Weekly)</h3><div class="placeholder">Waiting...</div><img id="chla-w">
+
+        <div class="card"><h3>Chl (Weekly)</h3><div class="img-container"><div class="placeholder">Waiting...</div><img id="chla-w"></div>
             <div class="cb-widget">Min: <input id="min-chla-w" value="0.03"> Max: <input id="max-chla-w" value="5"><button class="set-btn" onclick="updateMap('chla-w')">Set</button></div>
         </div>
-        <div class="card" id="box-sst"><h3>SST (°C)</h3><div class="placeholder">Waiting...</div><img id="sst">
+
+        <div class="card"><h3>SST (°C)</h3><div class="img-container"><div class="placeholder">Waiting...</div><img id="sst"></div>
             <div class="cb-widget">Min: <input id="min-sst" value="10"> Max: <input id="max-sst" value="22"><button class="set-btn" onclick="updateMap('sst')">Set</button></div>
         </div>
-        <div class="card" id="box-sst-anom"><h3>SST Anomaly</h3><div class="placeholder">Waiting...</div><img id="sst-anom">
+
+        <div class="card"><h3>SST Anomaly</h3><div class="img-container"><div class="placeholder">Waiting...</div><img id="sst-anom"></div>
             <div class="cb-widget">Min: <input id="min-sst-anom" value="-2"> Max: <input id="max-sst-anom" value="2"><button class="set-btn" onclick="updateMap('sst-anom')">Set</button></div>
         </div>
-        <div class="card" id="box-wind"><h3>Winds (m/s)</h3><div class="placeholder">Waiting...</div><img id="wind">
+
+        <div class="card"><h3>Winds (m/s)</h3><div class="img-container"><div class="placeholder">Waiting...</div><img id="wind"></div>
             <div class="cb-widget">Min: <input id="min-wind" value="0"> Max: <input id="max-wind" value="15"><button class="set-btn" onclick="updateMap('wind')">Set</button></div>
         </div>
-        <div class="card" style="grid-column: span 2;" id="box-ssh"><h3>Sea Surface Height (m)</h3><div class="placeholder">Waiting...</div><img id="ssh">
+
+        <div class="card"><h3>Sea Surface Height (m)</h3><div class="img-container"><div class="placeholder">Waiting...</div><img id="ssh"></div>
             <div class="cb-widget">Min: <input id="min-ssh" value="-0.5"> Max: <input id="max-ssh" value="0.5"><button class="set-btn" onclick="updateMap('ssh')">Set</button></div>
         </div>
     </div>
@@ -85,17 +122,14 @@
             const lon = Number(row[2]);
             const lonCorrected = lon > 180 ? lon - 360 : lon;
 
-            // 1. Dynamic 10-Day Date Calculation
             const maxDate = new Date(maxTimeStr);
             const startDate = new Date(maxDate);
             startDate.setDate(startDate.getDate() - 10);
             const startDateStr = startDate.toISOString().split("T")[0];
 
-            // 2. Alert Logic (48 hours)
             const hoursSinceReport = (new Date() - maxDate) / 36e5;
             alertBox.style.display = hoursSinceReport > 48 ? "block" : "none";
 
-            // 3. Grid Coordinates
             const nLat = (lat + 2.5).toFixed(2);
             const sLat = (lat - 2.5).toFixed(2);
             const wLon = (lonCorrected - 2.5).toFixed(2);
@@ -105,7 +139,6 @@
             info.innerHTML = `Vessel: <b>${currentShipName}</b> | Position: <span class="coords-text">${lat.toFixed(2)}, ${lon.toFixed(2)}</span><br>` +
                              `<small>Last Report: ${maxDate.toLocaleString()} | Track Window: ${startDateStr} to ${maxTimeStr.split('T')[0]}</small>`;
 
-            // 4. Update Maps
             updateMap('track-map', `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.png?longitude,latitude,time&time>=${startDateStr}&.draw=markers&.marker=10|5&.color=0x000000&.bgColor=0xffccccff`, true);
             ['chla-d', 'chla-w', 'sst', 'sst-anom', 'wind', 'ssh'].forEach(id => updateMap(id));
 
