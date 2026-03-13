@@ -6,10 +6,18 @@
     <style>
         body { font-family: sans-serif; padding: 30px; background-color: #f4f4f9; }
         .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        select { width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 20px; cursor: pointer; }
+        select { width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 10px; cursor: pointer; }
+        
+        .button-container { text-align: center; margin-bottom: 20px; }
+        .data-btn { 
+            background-color: #003366; color: white; border: none; padding: 10px 20px; 
+            border-radius: 6px; cursor: pointer; font-size: 0.9rem; text-decoration: none; display: inline-block;
+        }
+        .data-btn:hover { background-color: #0055aa; }
+
         .map-box { width: 100%; min-height: 500px; border: 2px solid #eee; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
         img { max-width: 100%; height: auto; display: block; border-radius: 4px; }
-        .info { margin-top: 15px; color: #333; font-weight: 500; text-align: center; line-height: 1.6; }
+        .info { margin-top: 15px; color: #666; font-style: italic; text-align: center; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -26,6 +34,10 @@
         <option value="fsuNoaaShipWTDLnrt">Pisces</option>
     </select>
 
+    <div class="button-container">
+        <a id="data-link" href="#" target="_blank" class="data-btn">View Latest Coordinates (Raw Data)</a>
+    </div>
+
     <div class="map-box">
         <div id="placeholder-text">Please select a vessel to generate the track map.</div>
         <img id="dynamic-map" src="" style="display:none;">
@@ -36,61 +48,46 @@
 
 <script>
     function loadShipMap() {
-        const shipId = document.getElementById('vessel-selector').value;
+        const selector = document.getElementById('vessel-selector');
+        const shipId = selector.value;
+        const shipName = selector.options[selector.selectedIndex].text;
+        
         const mapImg = document.getElementById('dynamic-map');
         const placeholder = document.getElementById('placeholder-text');
         const debug = document.getElementById('debug-info');
+        const dataLink = document.getElementById('data-link');
 
         if (!shipId) {
             mapImg.style.display = 'none';
             placeholder.style.display = 'block';
-            debug.innerText = "";
+            dataLink.style.display = 'none';
             return;
         }
 
-        // 1. Show loading state
-        placeholder.innerText = "Fetching vessel data and generating map...";
+        // 1. Calculate the date for 10 days ago
+        const date = new Date();
+        date.setDate(date.getDate() - 10);
+        const dateString = date.toISOString().split('T')[0];
+
+        // 2. The working ERDDAP Map URL
+        const url = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.png?longitude%2Clatitude%2Ctime&time%3E=${dateString}&.draw=markers&.marker=10%7C5&.color=0x000000&.colorBar=%7C%7C%7C%7C%7C&.bgColor=0xffccccff`;
+
+        // 3. The Working ERDDAP Data URL (opens HTML table of the very last position)
+        const rawDataUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.htmlTable?time%2Clatitude%2Clongitude&orderByMax(%22time%22)`;
+
+        // 4. Update the UI
+        dataLink.style.display = 'inline-block';
+        dataLink.href = rawDataUrl;
+        
+        placeholder.innerText = "Requesting map from ERDDAP...";
         mapImg.style.display = 'none';
+        
+        mapImg.src = url;
 
-        // 2. Request the latest data (Ship Name/Site, Lat, Lon, Time) via JSONP to avoid CORS
-        const dataUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.jsonp?site%2Clatitude%2Clongitude%2Ctime&orderByMax(%22time%22)&.jsonp=handleShipData`;
-
-        // Clean up any old script tags
-        const oldScript = document.getElementById('erddap-data-script');
-        if (oldScript) oldScript.remove();
-
-        const script = document.createElement('script');
-        script.id = 'erddap-data-script';
-        script.src = dataUrl;
-        document.body.appendChild(script);
-
-        // 3. Callback function to process the data
-        window.handleShipData = function(data) {
-            try {
-                const row = data.table.rows[0];
-                const shipName = row[0];
-                const lat = row[1].toFixed(4);
-                const lon = row[2].toFixed(4);
-                const time = new Date(row[3]).toLocaleString();
-
-                // Generate the Map URL (10 day window)
-                const date = new Date();
-                date.setDate(date.getDate() - 10);
-                const dateString = date.toISOString().split('T')[0];
-
-                const mapUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.png?longitude%2Clatitude%2Ctime&time%3E=${dateString}&.draw=markers&.marker=10%7C5&.color=0x000000&.colorBar=%7C%7C%7C%7C%7C&.bgColor=0xffccccff`;
-
-                mapImg.src = mapUrl;
-                
-                mapImg.onload = () => {
-                    placeholder.style.display = 'none';
-                    mapImg.style.display = 'block';
-                    // Update info text at bottom
-                    debug.innerHTML = `Ship: <b>${shipName}</b> | Position: <b>${lat}, ${lon}</b> <br> Last Updated: <b>${time}</b>`;
-                };
-            } catch (err) {
-                placeholder.innerText = "Error: Could not retrieve latest position data.";
-            }
+        mapImg.onload = () => {
+            placeholder.style.display = 'none';
+            mapImg.style.display = 'block';
+            debug.innerHTML = `Vessel: <b>${shipName}</b><br>Dataset ID: <code>${shipId}</code> | Since: ${dateString}`;
         };
 
         mapImg.onerror = () => {
@@ -100,7 +97,7 @@
         };
     }
 
-    // Initialize the Dyson on load
+    // Load default on start
     window.onload = loadShipMap;
 </script>
 
