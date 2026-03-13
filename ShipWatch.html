@@ -16,7 +16,7 @@
 
         .map-box { width: 100%; min-height: 500px; border: 2px solid #eee; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
         img { max-width: 100%; height: auto; display: block; border-radius: 4px; }
-        .info { margin-top: 15px; color: #333; text-align: center; line-height: 1.6; font-size: 1.1rem; }
+        .info { margin-top: 15px; color: #333; text-align: center; line-height: 1.6; font-size: 1.1rem; min-height: 60px; }
         .coords-text { font-weight: bold; color: #003366; }
     </style>
 </head>
@@ -39,7 +39,7 @@
     </div>
 
     <div class="map-box">
-        <div id="placeholder-text">Loading map and coordinates...</div>
+        <div id="placeholder-text">Loading map...</div>
         <img id="dynamic-map" src="" style="display:none;">
     </div>
     
@@ -47,36 +47,43 @@
 </div>
 
 <script>
-    // 1. This is the callback function that handles the data once ERDDAP sends it
+    // Global callback for JSONP
     window.handleErddapData = function(data) {
         const debug = document.getElementById('debug-info');
         const selector = document.getElementById('vessel-selector');
         const shipName = selector.options[selector.selectedIndex].text;
 
         try {
+            // ERDDAP JSONP returns an object with a table.rows array
             const row = data.table.rows[0];
-            const lat = row[1].toFixed(4);
-            const lon = row[2].toFixed(4);
-            const timestamp = new Date(row[0]).toLocaleString();
+            const timeVal = row[0];
+            const latVal = typeof row[1] === 'number' ? row[1].toFixed(4) : row[1];
+            const lonVal = typeof row[2] === 'number' ? row[2].toFixed(4) : row[2];
+            const timestamp = new Date(timeVal).toLocaleString();
 
-            // Display the Ship Name and retrieved coordinates
             debug.innerHTML = `Vessel: <b>${shipName}</b><br>` +
-                             `Latest Position: <span class="coords-text">${lat}, ${lon}</span><br>` +
-                             `<small>As of: ${timestamp}</small>`;
+                             `Latest Position: <span class="coords-text">${latVal}, ${lonVal}</span><br>` +
+                             `<small>Observed: ${timestamp}</small>`;
         } catch (err) {
-            debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>Coordinates currently unavailable.</small>`;
+            console.error("JSONP Parsing Error:", err);
+            debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>(Detailed coordinates unavailable via script)</small>`;
         }
     };
 
     function loadShipMap() {
         const selector = document.getElementById('vessel-selector');
         const shipId = selector.value;
+        const shipName = selector.options[selector.selectedIndex].text;
         
         const mapImg = document.getElementById('dynamic-map');
         const placeholder = document.getElementById('placeholder-text');
+        const debug = document.getElementById('debug-info');
         const dataLink = document.getElementById('data-link');
 
         if (!shipId) return;
+
+        // Immediately update text so it's not blank
+        debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>Loading latest coordinates...</small>`;
 
         // Update the 'View Raw' link
         dataLink.href = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.htmlTable?time%2Clatitude%2Clongitude&orderByMax(%22time%22)`;
@@ -87,16 +94,21 @@
         const dateString = date.toISOString().split('T')[0];
         mapImg.src = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.png?longitude%2Clatitude%2Ctime&time%3E=${dateString}&.draw=markers&.marker=10%7C5&.color=0x000000&.colorBar=%7C%7C%7C%7C%7C&.bgColor=0xffccccff`;
 
-        // Start the JSONP request for coordinates
-        const jsonpUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.jsonp?time%2Clatitude%2Clongitude&orderByMax(%22time%22)&.jsonp=handleErddapData`;
+        // JSONP Request for Coordinates
+        const jsonpUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.jsonp?time,latitude,longitude&orderByMax("time")&.jsonp=handleErddapData`;
         
-        // Remove old scripts to keep the page clean
         const oldScript = document.getElementById('erddap-script');
         if (oldScript) oldScript.remove();
 
         const script = document.createElement('script');
         script.id = 'erddap-script';
         script.src = jsonpUrl;
+        
+        // Error handling for the script tag itself
+        script.onerror = function() {
+            debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>(Error connecting to coordinate server)</small>`;
+        };
+
         document.body.appendChild(script);
 
         mapImg.onload = () => {
