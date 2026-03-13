@@ -4,21 +4,75 @@
     <meta charset="UTF-8">
     <title>NOAA Ship Track Mapper</title>
     <style>
-        body { font-family: sans-serif; padding: 30px; background-color: #f4f4f9; }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        select { width: 100%; padding: 12px; font-size: 1.1rem; border-radius: 8px; border: 2px solid #003366; margin-bottom: 20px; cursor: pointer; }
-        .map-box { width: 100%; min-height: 500px; border: 2px solid #eee; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #fafafa; position: relative; }
-        img { max-width: 100%; height: auto; display: block; border-radius: 4px; }
-        .info { margin-top: 15px; color: #333; text-align: center; line-height: 1.6; font-size: 1.1rem; }
-        .coords-text { font-weight: bold; color: #003366; }
-        #placeholder-text { position: absolute; z-index: 1; color: #666; }
+        body {
+            font-family: sans-serif;
+            padding: 30px;
+            background-color: #f4f4f9;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            border: 2px solid #003366;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .map-box {
+            width: 100%;
+            min-height: 500px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fafafa;
+            position: relative;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 4px;
+        }
+
+        .info {
+            margin-top: 15px;
+            color: #333;
+            text-align: center;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+
+        .coords-text {
+            font-weight: bold;
+            color: #003366;
+        }
+
+        #placeholder-text {
+            position: absolute;
+            z-index: 1;
+            color: #666;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>Vessel History (Last 10 Days)</h2>
-    
+
     <select id="vessel-selector" onchange="loadShipMap()">
         <option value="fsuNoaaShipWTEPnrt">Oscar Dyson (Gulf of Alaska)</option>
         <option value="fsuNoaaShipWTEDnrt">Bell M. Shimada (West Coast)</option>
@@ -30,70 +84,89 @@
 
     <div class="map-box">
         <div id="placeholder-text">Loading...</div>
-        <img id="dynamic-map" src="" style="display:none;">
+        <img id="dynamic-map" src="" alt="Ship track map" style="display:none;">
     </div>
-    
-    <div id="debug-info" class="info"></div>
+
+    <div id="ship-info" class="info"></div>
 </div>
 
 <script>
-    async function loadShipMap() {
-        const selector = document.getElementById('vessel-selector');
+    let currentShipName = "";
+
+    function handleLatestShipPosition(data) {
+        const info = document.getElementById("ship-info");
+
+        try {
+            const row = data.table.rows[0];
+            const time = row[0];
+            const lat = Number(row[1]);
+            const lon = Number(row[2]);
+            const lonForMap = lon > 180 ? lon - 360 : lon;
+
+            if (Number.isNaN(lat) || Number.isNaN(lon)) {
+                throw new Error("Invalid coordinates");
+            }
+
+            info.innerHTML =
+                `Vessel: <b>${currentShipName}</b><br>` +
+                `Latest Position: <span class="coords-text">${lat.toFixed(4)}, ${lon.toFixed(4)}</span><br>` +
+                `<small>Map longitude: ${lonForMap.toFixed(4)}</small><br>` +
+                `<small>Observed: ${new Date(time).toLocaleString()}</small>`;
+        } catch {
+            info.innerHTML = `Vessel: <b>${currentShipName}</b><br><small>(Coordinates temporarily unavailable)</small>`;
+        }
+    }
+
+    function loadShipMap() {
+        const selector = document.getElementById("vessel-selector");
         const shipId = selector.value;
-        
-        // This line gets the text, then uses a "Regular Expression" 
-        // to remove anything inside parentheses for the bottom label.
-        const fullText = selector.options[selector.selectedIndex].text;
-        const shipName = fullText.replace(/\s*\(.*?\)\s*/g, '').trim();
-        
-        const mapImg = document.getElementById('dynamic-map');
-        const placeholder = document.getElementById('placeholder-text');
-        const debug = document.getElementById('debug-info');
+        const shipName = selector.options[selector.selectedIndex].text.replace(/\s*\(.*?\)\s*/g, "").trim();
+
+        currentShipName = shipName;
+
+        const mapImg = document.getElementById("dynamic-map");
+        const placeholder = document.getElementById("placeholder-text");
+        const info = document.getElementById("ship-info");
 
         if (!shipId) return;
 
-        // 1. SET THE MAP IMMEDIATELY
+        info.innerHTML = `Vessel: <b>${shipName}</b><br><small>Fetching coordinates...</small>`;
+
         const date = new Date();
         date.setDate(date.getDate() - 10);
-        const dateString = date.toISOString().split('T')[0];
-        
-        mapImg.style.display = 'none';
-        placeholder.style.display = 'block';
+        const dateString = date.toISOString().split("T")[0];
+
+        mapImg.style.display = "none";
+        placeholder.style.display = "block";
         placeholder.innerText = "Requesting map...";
-        
+
         mapImg.src = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.png?longitude%2Clatitude%2Ctime&time%3E=${dateString}&.draw=markers&.marker=10%7C5&.color=0x000000&.colorBar=%7C%7C%7C%7C%7C&.bgColor=0xffccccff`;
 
         mapImg.onload = () => {
-            placeholder.style.display = 'none';
-            mapImg.style.display = 'block';
+            placeholder.style.display = "none";
+            mapImg.style.display = "block";
         };
 
-        // 2. FETCH COORDINATE DATA
-        debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>Fetching coordinates...</small>`;
-        
-        const targetCsvUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.csv?time,latitude,longitude&orderByMax("time")`;
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetCsvUrl)}`;
+        mapImg.onerror = () => {
+            placeholder.innerText = "Map could not be loaded.";
+        };
 
-        try {
-            const response = await fetch(proxyUrl);
-            const wrapper = await response.json();
-            const csvData = wrapper.contents; 
-            
-            const lines = csvData.split('\n');
-            const dataRow = lines[2].split(',');
+        const oldScript = document.getElementById("jsonp-script");
+        if (oldScript) oldScript.remove();
 
-            const time = dataRow[0].replace(/"/g, '');
-            const lat = parseFloat(dataRow[1]).toFixed(4);
-            const lon = parseFloat(dataRow[2]).toFixed(4);
+        const script = document.createElement("script");
+        script.id = "jsonp-script";
+        script.src =
+            `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.json` +
+            `?time,latitude,longitude` +
+            `&orderByMax("time")` +
+            `&.jsonp=handleLatestShipPosition`;
 
-            debug.innerHTML = `Vessel: <b>${shipName}</b><br>` +
-                             `Latest Position: <span class="coords-text">${lat}, ${lon}</span><br>` +
-                             `<small>Observed: ${new Date(time).toLocaleString()}</small>`;
+        script.onerror = () => {
+            info.innerHTML = `Vessel: <b>${shipName}</b><br><small>(Coordinates temporarily unavailable)</small>`;
+        };
 
-        } catch (err) {
-            console.error("CSV Fetch failed:", err);
-            debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>(Coordinates temporarily unavailable)</small>`;
-        }
+        document.body.appendChild(script);
     }
 
     window.onload = loadShipMap;
