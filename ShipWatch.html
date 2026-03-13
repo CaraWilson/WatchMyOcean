@@ -13,11 +13,11 @@
             background-color: #003366; color: white; border: none; padding: 10px 20px; 
             border-radius: 6px; cursor: pointer; font-size: 0.9rem; text-decoration: none; display: inline-block;
         }
-        .data-btn:hover { background-color: #0055aa; }
 
         .map-box { width: 100%; min-height: 500px; border: 2px solid #eee; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
         img { max-width: 100%; height: auto; display: block; border-radius: 4px; }
-        .info { margin-top: 15px; color: #666; font-style: italic; text-align: center; line-height: 1.5; }
+        .info { margin-top: 15px; color: #333; text-align: center; line-height: 1.6; font-size: 1.1rem; }
+        .coords-text { font-weight: bold; color: #003366; }
     </style>
 </head>
 <body>
@@ -35,11 +35,11 @@
     </select>
 
     <div class="button-container">
-        <a id="data-link" href="#" target="_blank" class="data-btn">View Latest Coordinates (Raw Data)</a>
+        <a id="data-link" href="#" target="_blank" class="data-btn">Open Raw Data Table</a>
     </div>
 
     <div class="map-box">
-        <div id="placeholder-text">Please select a vessel to generate the track map.</div>
+        <div id="placeholder-text">Loading map and coordinates...</div>
         <img id="dynamic-map" src="" style="display:none;">
     </div>
     
@@ -47,57 +47,64 @@
 </div>
 
 <script>
+    // 1. This is the callback function that handles the data once ERDDAP sends it
+    window.handleErddapData = function(data) {
+        const debug = document.getElementById('debug-info');
+        const selector = document.getElementById('vessel-selector');
+        const shipName = selector.options[selector.selectedIndex].text;
+
+        try {
+            const row = data.table.rows[0];
+            const lat = row[1].toFixed(4);
+            const lon = row[2].toFixed(4);
+            const timestamp = new Date(row[0]).toLocaleString();
+
+            // Display the Ship Name and retrieved coordinates
+            debug.innerHTML = `Vessel: <b>${shipName}</b><br>` +
+                             `Latest Position: <span class="coords-text">${lat}, ${lon}</span><br>` +
+                             `<small>As of: ${timestamp}</small>`;
+        } catch (err) {
+            debug.innerHTML = `Vessel: <b>${shipName}</b><br><small>Coordinates currently unavailable.</small>`;
+        }
+    };
+
     function loadShipMap() {
         const selector = document.getElementById('vessel-selector');
         const shipId = selector.value;
-        const shipName = selector.options[selector.selectedIndex].text;
         
         const mapImg = document.getElementById('dynamic-map');
         const placeholder = document.getElementById('placeholder-text');
-        const debug = document.getElementById('debug-info');
         const dataLink = document.getElementById('data-link');
 
-        if (!shipId) {
-            mapImg.style.display = 'none';
-            placeholder.style.display = 'block';
-            dataLink.style.display = 'none';
-            return;
-        }
+        if (!shipId) return;
 
-        // 1. Calculate the date for 10 days ago
+        // Update the 'View Raw' link
+        dataLink.href = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.htmlTable?time%2Clatitude%2Clongitude&orderByMax(%22time%22)`;
+
+        // Update the Map Image
         const date = new Date();
         date.setDate(date.getDate() - 10);
         const dateString = date.toISOString().split('T')[0];
+        mapImg.src = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.png?longitude%2Clatitude%2Ctime&time%3E=${dateString}&.draw=markers&.marker=10%7C5&.color=0x000000&.colorBar=%7C%7C%7C%7C%7C&.bgColor=0xffccccff`;
 
-        // 2. The working ERDDAP Map URL
-        const url = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.png?longitude%2Clatitude%2Ctime&time%3E=${dateString}&.draw=markers&.marker=10%7C5&.color=0x000000&.colorBar=%7C%7C%7C%7C%7C&.bgColor=0xffccccff`;
-
-        // 3. The Working ERDDAP Data URL (opens HTML table of the very last position)
-        const rawDataUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.htmlTable?time%2Clatitude%2Clongitude&orderByMax(%22time%22)`;
-
-        // 4. Update the UI
-        dataLink.style.display = 'inline-block';
-        dataLink.href = rawDataUrl;
+        // Start the JSONP request for coordinates
+        const jsonpUrl = `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.jsonp?time%2Clatitude%2Clongitude&orderByMax(%22time%22)&.jsonp=handleErddapData`;
         
-        placeholder.innerText = "Requesting map from ERDDAP...";
-        mapImg.style.display = 'none';
-        
-        mapImg.src = url;
+        // Remove old scripts to keep the page clean
+        const oldScript = document.getElementById('erddap-script');
+        if (oldScript) oldScript.remove();
+
+        const script = document.createElement('script');
+        script.id = 'erddap-script';
+        script.src = jsonpUrl;
+        document.body.appendChild(script);
 
         mapImg.onload = () => {
             placeholder.style.display = 'none';
             mapImg.style.display = 'block';
-            debug.innerHTML = `Vessel: <b>${shipName}</b><br>Dataset ID: <code>${shipId}</code> | Since: ${dateString}`;
-        };
-
-        mapImg.onerror = () => {
-            placeholder.style.display = 'block';
-            placeholder.innerText = "Error: Map could not be generated.";
-            mapImg.style.display = 'none';
         };
     }
 
-    // Load default on start
     window.onload = loadShipMap;
 </script>
 
