@@ -47,11 +47,22 @@
                 throw new Error("Invalid coordinates");
             }
 
-            // Updated to your specific one-line format
+            // Create a formatted date string that includes the time zone
+            const dateObj = new Date(time);
+            const timeWithZone = dateObj.toLocaleString(undefined, {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric',
+                timeZoneName: 'short'
+            });
+
             info.innerHTML =
                 `Vessel: <b>${currentShipName}</b><br>` +
                 `Latest Position: <span class="coords-text">${lat.toFixed(2)}, ${lon.toFixed(2)} (${lonForMap.toFixed(2)})</span> ` +
-                `Observed: ${new Date(time).toLocaleString()}`;
+                `Observed: ${timeWithZone}`;
         } catch {
             info.innerHTML = `Vessel: <b>${currentShipName}</b><br><small>(Coordinates temporarily unavailable)</small>`;
         }
@@ -95,7 +106,6 @@
 
         const script = document.createElement("script");
         script.id = "jsonp-script";
-        // Reverted to .json as requested since it was working for you
         script.src =
             `https://coastwatch.pfeg.noaa.gov/erddap/tabledap/${shipId}.json` +
             `?time,latitude,longitude` +
