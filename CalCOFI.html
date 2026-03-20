@@ -65,6 +65,7 @@
 
 <div class="data-grid" id="grid">
   <div class="card"><h3>Daily Chlorophyll</h3><div class="map-wrap"><img id="img-chla-d"><canvas id="cvs-chla-d" class="station-canvas"></canvas></div><a id="lnk-chla-d" target="_blank">ERDDAP</a></div>
+  <div class="card"><h3>Daily DINEOF Chlorophyll</h3><div class="map-wrap"><img id="img-chla-dineof"><canvas id="cvs-chla-dineof" class="station-canvas"></canvas></div><a id="lnk-chla-dineof" target="_blank">ERDDAP</a></div>
   <div class="card"><h3>Weekly Chlorophyll</h3><div class="map-wrap"><img id="img-chla-w"><canvas id="cvs-chla-w" class="station-canvas"></canvas></div><a id="lnk-chla-w" target="_blank">ERDDAP</a></div>
   <div class="card"><h3>SST</h3><div class="map-wrap"><img id="img-sst"><canvas id="cvs-sst" class="station-canvas"></canvas></div><a id="lnk-sst" target="_blank">ERDDAP</a></div>
   <div class="card"><h3>SST Anomaly</h3><div class="map-wrap"><img id="img-sst-anom"><canvas id="cvs-sst-anom" class="station-canvas"></canvas></div><a id="lnk-sst-anom" target="_blank">ERDDAP</a></div>
@@ -104,7 +105,7 @@
   function getPlotBox(canvas, id) {
     const W = canvas.width, H = canvas.height;
     let L = 0.15, R = 0.05, T = 0.13, B = 0.38;
-    if (id === "chla-d" || id === "chla-w" || id === "sst" || id === "sst-anom" || id === "sardine") { L = -0.02; B = 0.38; }
+    if (id === "chla-d" || id === "chla-dineof" || id === "chla-w" || id === "sst" || id === "sst-anom" || id === "sardine") { L = -0.02; B = 0.38; }
     else if (id === "charms-pn") { L = -0.08; B = 0.44; }
     else if (id === "charms-salt") { L = 0.0; B = 0.44; }
     else if (id === "wind") { L = -0.02; B = 0.41; }
@@ -115,7 +116,7 @@
 
   // YOUR WORKING GEO BOUNDS DATA
   function getGeoBounds(id, sLat, nLat, wLon, eLon) {
-    if (id === "chla-d" || id === "chla-w") return { sLat: 29.00625, nLat: 38.98125, wLon: -126.99375, eLon: -116.00625 };
+    if (id === "chla-d" || id === "chla-dineof" || id === "chla-w") return { sLat: 29.00625, nLat: 38.98125, wLon: -126.99375, eLon: -116.00625 };
     if (id === "sst" || id === "sst-anom") return { sLat: 29.025, nLat: 39.025, wLon: -126.975, eLon: -115.975 };
     if (id === "sardine") return { sLat: 29.02083, nLat: 39.02083, wLon: -126.9792, eLon: -115.9792 };
     if (id === "charms-pn" || id === "charms-salt") return { sLat: 31.3, nLat: 39.01, wLon: -126.990005, eLon: -117.0 };
@@ -167,6 +168,7 @@
     }
 
     setContent("chla-d", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily", `?chlor_a[(last)][(0.0)]${coords}&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||.03|5|`);
+    setContent("chla-dineof", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/noaacwNPPN20S3ASCIDINEOF2kmDaily", `?chlor_a[(last)][(0.0)]${coords}&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||.03|5|`);
     setContent("chla-w", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaWeekly", `?chlor_a[(last)][(0.0)]${coords}&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||.03|5|`);
     setContent("sst", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW", `?CRW_SST[(last)]${coords}&.vars=longitude|latitude|CRW_SST&.colorBar=|||10|22|`);
     setContent("sst-anom", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW", `?CRW_SSTANOMALY[(last)]${coords}&.vars=longitude|latitude|CRW_SSTANOMALY&.colorBar=BlueWhiteRed|||-2|2|`);
