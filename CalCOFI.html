@@ -7,6 +7,7 @@
     body { font-family: sans-serif; background: #f0f4f8; margin: 0; padding: 20px; }
     h1 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
 
+    /* PAGE TOGGLE STYLING */
     .page-toggle { display: flex; justify-content: center; max-width: 1200px; margin: 0 auto 20px auto; }
     .toggle-btn { flex: 1; max-width: 300px; padding: 12px; text-align: center; text-decoration: none; font-weight: bold; font-size: 0.9rem; border: 2px solid #2c3e50; transition: all 0.3s ease; }
     .toggle-btn.inactive { background-color: white; color: #2c3e50; }
@@ -15,20 +16,18 @@
     .toggle-btn:first-child { border-radius: 8px 0 0 8px; }
     .toggle-btn:last-child { border-radius: 0 8px 8px 0; border-left: none; }
 
+    /* DASHBOARD STYLING */
     #erddap-widget, .card { background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     #erddap-widget { padding: 15px; border: 1px solid #2c3e50; max-width: 1200px; margin: 0 auto 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-    .widget-flex, .btn-row, .cb-widget { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-    .widget-flex { gap: 10px; align-items: flex-end; }
+    .widget-flex { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
     
     .input-group { flex: 1; min-width: 120px; }
     .input-group label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #34495e; }
-    .input-group input, .cb-widget input { border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-    .input-group input { width: 100%; padding: 8px; }
-    .cb-widget input { width: 55px; padding: 4px; text-align: center; }
+    .input-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
 
     .button-group { display: flex; flex-direction: column; gap: 5px; min-width: 220px; }
-    .update-btn, .reset-btn, .set-btn { border: none; color: white; cursor: pointer; border-radius: 4px; font-weight: bold; }
-    .update-btn, .reset-btn { padding: 10px 14px; flex: 1; }
+    .btn-row { display: flex; gap: 6px; }
+    .update-btn, .reset-btn, .set-btn { border: none; color: white; cursor: pointer; border-radius: 4px; font-weight: bold; padding: 10px 14px; }
     .update-btn, .set-btn { background: #2c3e50; }
     .reset-btn { background: #95a5a6; }
     .set-btn { padding: 5px 8px; }
@@ -36,7 +35,7 @@
     .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
     .card { padding: 12px; text-align: center; display: flex; flex-direction: column; }
     .card.hidden { display: none; }
-    .card h3 { margin: 10px 0 5px 0; color: #2c3e50; font-size: 1.1em; }
+    .card h3 { margin: 10px 0 2px 0; color: #2c3e50; font-size: 1.1em; }
     
     .card-subtitle { font-size: 0.8rem; color: #7f8c8d; margin-bottom: 10px; font-style: italic; min-height: 1.2em; }
 
@@ -44,7 +43,8 @@
     .map-wrap img { width: 100%; min-height: 200px; display: block; border: 1px solid #eee; background: #fafafa; }
     .station-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
     
-    .cb-widget { justify-content: center; width: 100%; margin-top: 10px; padding: 6px; background: #eee; border-radius: 4px; box-sizing: border-box; font-size: 0.8rem; }
+    .cb-widget { display: flex; gap: 6px; align-items: center; justify-content: center; width: 100%; margin-top: 10px; padding: 6px; background: #eee; border-radius: 4px; font-size: 0.8rem; }
+    .cb-widget input { width: 55px; padding: 4px; text-align: center; border: 1px solid #ccc; border-radius: 4px; }
     .card a { display: inline-block; margin-top: 8px; color: #3498db; text-decoration: none; font-weight: bold; font-size: 0.85em; }
     #station-note { display: none; margin-top: 5px; text-align: center; font-size: 12px; font-weight: bold; color: #d35400; }
   </style>
@@ -76,11 +76,11 @@
   </div>
 
   <div class="data-grid">
-    <div class="card" id="card-chla-d"><h3>Daily Chlorophyll</h3><div class="card-subtitle"></div><div class="map-wrap"><img id="img-chla-d"><canvas id="cvs-chla-d" class="station-canvas"></canvas></div><div class="cb-widget">Min: <input id="min-chla-d" value="0.03"> Max: <input id="max-chla-d" value="5"> <button class="set-btn" onclick="updateAllMaps()">Set</button></div><a id="lnk-chla-d" target="_blank">ERDDAP</a></div>
+    <div class="card" id="card-chla-d"><h3>Daily Chlorophyll</h3><div class="card-subtitle">Loading period...</div><div class="map-wrap"><img id="img-chla-d"><canvas id="cvs-chla-d" class="station-canvas"></canvas></div><div class="cb-widget">Min: <input id="min-chla-d" value="0.03"> Max: <input id="max-chla-d" value="5"> <button class="set-btn" onclick="updateAllMaps()">Set</button></div><a id="lnk-chla-d" target="_blank">ERDDAP</a></div>
     
-    <div class="card" id="card-chla-fill"><h3>Filled Chlorophyll (3-day)</h3><div class="card-subtitle"></div><div class="map-wrap"><img id="img-chla-fill"><canvas id="cvs-chla-fill" class="station-canvas"></canvas></div><div class="cb-widget">Min: <input id="min-chla-fill" value="0.03"> Max: <input id="max-chla-fill" value="5"> <button class="set-btn" onclick="updateAllMaps()">Set</button></div><a id="lnk-chla-fill" target="_blank">ERDDAP</a></div>
+    <div class="card" id="card-chla-fill"><h3>Filled Chlorophyll (3-day)</h3><div class="card-subtitle">Loading period...</div><div class="map-wrap"><img id="img-chla-fill"><canvas id="cvs-chla-fill" class="station-canvas"></canvas></div><div class="cb-widget">Min: <input id="min-chla-fill" value="0.03"> Max: <input id="max-chla-fill" value="5"> <button class="set-btn" onclick="updateAllMaps()">Set</button></div><a id="lnk-chla-fill" target="_blank">ERDDAP</a></div>
     
-    <div class="card" id="card-chla-14d"><h3>14-Day Chlorophyll</h3><div class="card-subtitle"></div><div class="map-wrap"><img id="img-chla-14d"><canvas id="cvs-chla-14d" class="station-canvas"></canvas></div><div class="cb-widget">Min: <input id="min-chla-14d" value="0.03"> Max: <input id="max-chla-14d" value="5"> <button class="set-btn" onclick="updateAllMaps()">Set</button></div><a id="lnk-chla-14d" target="_blank">ERDDAP</a></div>
+    <div class="card" id="card-chla-14d"><h3>14-Day Chlorophyll</h3><div class="card-subtitle">Loading period...</div><div class="map-wrap"><img id="img-chla-14d"><canvas id="cvs-chla-14d" class="station-canvas"></canvas></div><div class="cb-widget">Min: <input id="min-chla-14d" value="0.03"> Max: <input id="max-chla-14d" value="5"> <button class="set-btn" onclick="updateAllMaps()">Set</button></div><a id="lnk-chla-14d" target="_blank">ERDDAP</a></div>
 
     <div class="card" id="card-sst"><h3>SST</h3><div class="card-subtitle"></div><div class="map-wrap"><img id="img-sst"><canvas id="cvs-sst" class="station-canvas"></canvas></div><div class="cb-widget">Min: <input id="min-sst" value="10"> Max: <input id="max-sst" value="22"> <button class="set-btn" onclick="updateAllMaps()">Set</button></div><a id="lnk-sst" target="_blank">ERDDAP</a></div>
     <div class="card" id="card-sst-anom"><h3>SST Anomaly</h3><div class="card-subtitle"></div><div class="map-wrap"><img id="img-sst-anom"><canvas id="cvs-sst-anom" class="station-canvas"></canvas></div><div class="cb-widget">Min: <input id="min-sst-anom" value="-2"> Max: <input id="max-sst-anom" value="2"> <button class="set-btn" onclick="updateAllMaps()">Set</button></div><a id="lnk-sst-anom" target="_blank">ERDDAP</a></div>
@@ -132,7 +132,7 @@
       const coords = `[(${sLat}):(${nLat})][(${wLon}):(${eLon})]`;
       const cCoords = `[(${Math.max(31.3, sLat)}):(${Math.min(43, nLat)})][(${Math.max(-127.5, wLon)}):(${Math.min(-117, eLon)})]`;
 
-      function setContent(id, baseUrl, q, isRegional = false, timeVar = "time") {
+      function setContent(id, baseUrl, q, isRegional = false) {
         const card = document.getElementById("card-" + id);
         const img = document.getElementById("img-" + id);
         const sub = card.querySelector('.card-subtitle');
@@ -146,28 +146,33 @@
 
         const mm = getMinMax(id);
         const fullQ = q.replace("SCALE", `${mm.min}|${mm.max}`);
-        
         img.onload = () => drawStations("cvs-" + id, "img-" + id, sLat, nLat, wLon, eLon);
         img.src = baseUrl + ".png" + fullQ;
         document.getElementById("lnk-" + id).href = baseUrl + ".graph" + fullQ;
 
-        // Dynamic Subtitle Fetch
-        fetch(`${baseUrl}.json?${timeVar}&orderByMax("${timeVar}")&limit(1)`)
-            .then(res => res.json())
-            .then(data => {
+        // JSONP Callback for bypassings CORS
+        const callbackName = "cb_" + id.replace(/-/g, "_");
+        window[callbackName] = function(data) {
+            try {
                 const endDate = new Date(data.table.rows[0][0]);
                 let dateDisplay = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                
                 if (id === "chla-14d") {
                     const startDate = new Date(endDate);
                     startDate.setUTCDate(startDate.getUTCDate() - 13);
                     dateDisplay = `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${dateDisplay}`;
                 }
                 sub.innerHTML = `<b>Period:</b> ${dateDisplay}`;
-            }).catch(() => { sub.innerHTML = "Period: Not available"; });
+            } catch(e) { sub.innerHTML = "Period: Unavailable"; }
+            document.getElementById("script-" + id)?.remove();
+        };
+
+        const script = document.createElement("script");
+        script.id = "script-" + id;
+        script.src = `${baseUrl}.jsonp?time&orderByMax("time")&limit(1)&.jsonp=${callbackName}`;
+        document.body.appendChild(script);
       }
 
-      // GLOBAL PRODUCTS
+      // GLOBAL
       setContent("chla-d", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/productivity_viirs_snpp_nrt_daily", `?chlor_a[(last)]${coords}&.vars=longitude|latitude|chlor_a&.colorBar=Rainbow2|||SCALE|`);
       setContent("sst", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW", `?CRW_SST[(last)]${coords}&.vars=longitude|latitude|CRW_SST&.colorBar=|||SCALE|`);
       setContent("sst-anom", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW", `?CRW_SSTANOMALY[(last)]${coords}&.vars=longitude|latitude|CRW_SSTANOMALY&.colorBar=BlueWhiteRed|||SCALE|`);
@@ -175,7 +180,7 @@
       setContent("ssh", "https://coastwatch.noaa.gov/erddap/griddap/noaacweddymesiplusdaily", `?ssh[(last)]${coords}&.vars=longitude|latitude|ssh&.colorBar=|||SCALE|`);
       setContent("sss", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/coastwatchSMOSv662SSS3day", `?sss[(last)][(0.0)]${coords}&.colorBar=|||SCALE|`);
 
-      // REGIONAL PRODUCTS - Variable names corrected for Filled and 14-day
+      // REGIONAL
       setContent("chla-fill", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180", `?chla_filled[(last)]${cCoords}&.colorBar=Rainbow2|||SCALE|`, true);
       setContent("chla-14d", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/sardine_habitat_viirs_v2", `?chlorophyll[(last)]${coords}&.colorBar=Rainbow2|||SCALE|`, true);
       setContent("sardine", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/sardine_habitat_viirs_v2", `?potential_habitat_classification[(last)]${coords}&.colorBar=|||SCALE|`, true);
