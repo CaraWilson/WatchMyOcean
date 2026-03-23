@@ -75,7 +75,7 @@
   <div class="data-grid">
     <div class="card" id="card-chla-d"><h3>Daily Chlorophyll</h3><div class="map-wrap"><img id="img-chla-d"><canvas id="cvs-chla-d" class="station-canvas"></canvas></div><div class="cb-widget">Min: <input id="min-chla-d" value="0.03"> Max: <input id="max-chla-d" value="5"> <button class="set-btn" onclick="updateAllMaps()">Set</button></div><a id="lnk-chla-d" target="_blank">ERDDAP</a></div>
     
-    <div class="card" id="card-chla-fill"><h3>Filled Chlorophyll (3-day)</h3><div class="map-wrap"><img id="img-chla-fill"><canvas id="cvs-chla-fill" class="station-canvas"></canvas></div><div class="cb-widget">Min: <input id="min-chla-fill" value="0.03"> Max: <input id="max-chla-fill" value="5"> <button class="set-btn" onclick="updateAllMaps()">Set</button></div><a id="lnk-chla-fill" target="_blank">ERDDAP</a></div>
+    <div class="card" id="card-chla-fill"><h3>Filled Chlorophyll</h3><div class="map-wrap"><img id="img-chla-fill"><canvas id="cvs-chla-fill" class="station-canvas"></canvas></div><div class="cb-widget">Min: <input id="min-chla-fill" value="0.03"> Max: <input id="max-chla-fill" value="5"> <button class="set-btn" onclick="updateAllMaps()">Set</button></div><a id="lnk-chla-fill" target="_blank">ERDDAP</a></div>
     
     <div class="card" id="card-chla-14d"><h3>14-Day Chlorophyll</h3><div class="map-wrap"><img id="img-chla-14d"><canvas id="cvs-chla-14d" class="station-canvas"></canvas></div><div class="cb-widget">Min: <input id="min-chla-14d" value="0.03"> Max: <input id="max-chla-14d" value="5"> <button class="set-btn" onclick="updateAllMaps()">Set</button></div><a id="lnk-chla-14d" target="_blank">ERDDAP</a></div>
 
@@ -163,8 +163,8 @@
       setContent("sss", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/coastwatchSMOSv662SSS3day", `?sss[(last)][(0.0)]${coords}&.colorBar=|||SCALE|`);
 
       // REGIONAL DATASETS (Last argument is true)
-      setContent("chla-fill", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180", `?chlor_a[(last)]${cCoords}&.colorBar=Rainbow2|||SCALE|`, true);
-      setContent("chla-14d", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/sardine_habitat_viirs_v2", `?chlor_a[(last)]${coords}&.colorBar=Rainbow2|||SCALE|`, true);
+      setContent("chla-fill", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180", `?chla_filled[(last)]${cCoords}&.colorBar=Rainbow2|||SCALE|`, true);
+      setContent("chla-14d", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/sardine_habitat_viirs_v2", `?chlorophyll[(last)]${coords}&.colorBar=Rainbow2|||SCALE|`, true);
       setContent("sardine", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/sardine_habitat_viirs_v2", `?potential_habitat_classification[(last)]${coords}&.colorBar=|||SCALE|`, true);
       setContent("charms-pn", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180", `?pseudo_nitzschia[(last)]${cCoords}&.colorBar=|||SCALE|`, true);
       setContent("charms-salt", "https://coastwatch.pfeg.noaa.gov/erddap/griddap/wvcharmV3_3day_LonPM180", `?salinity[(last)]${cCoords}&.colorBar=|||SCALE|`, true);
